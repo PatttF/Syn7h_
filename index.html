@@ -32,7 +32,7 @@
             -webkit-user-select: none; -ms-user-select: none; user-select: none; 
         }
         .key { border: 1px solid #4a5568; border-radius: 5px; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; font-size: 10px; padding-bottom: 5px; transition: background-color 0.1s ease; box-sizing: border-box; }
-        .white-key { background-color: #f7fafc; color: #2d3748; width: 38px; height: 170px; z-index: 1; margin-right: -1px; /* Overlap borders slightly */ }
+        .white-key { background-color: #f7fafc; color: #2d3748; width: 38px; height: 170px; z-index: 1; margin-right: -1px; }
         .white-key:active, .white-key.active { background-color: #a0aec0; }
         .black-key { 
             background-color: #2d3748; 
@@ -42,7 +42,7 @@
             position: absolute; 
             z-index: 2; 
             border: 1px solid #1a202c;
-            margin-left: -13px; /* Half of its width to center it over the division */
+            margin-left: -13px; 
         }
         .black-key:active, .black-key.active { background-color: #4a5568; }
         
@@ -168,7 +168,7 @@
         // --- Global Variables & Tone.js Objects ---
         let synth;
         let startingOctave = 4; 
-        // mainFilter removed as filtering is per-voice now
+        // mainFilter removed
         let lfo1, lfo1ToDetuneGain, lfo1ToFilterFreqGain;
         let tremoloEffect, distortionEffect, bitCrusherEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect;
         let currentPolySynthVoiceType = Tone.MonoSynth; 
@@ -209,11 +209,11 @@
         const notesLayout = [ { name: 'C', freqName: 'C', type: 'white' }, { name: 'C#', freqName: 'C#', type: 'black' },{ name: 'D', freqName: 'D', type: 'white' }, { name: 'D#', freqName: 'D#', type: 'black' },{ name: 'E', freqName: 'E', type: 'white' }, { name: 'F', freqName: 'F', type: 'white' },{ name: 'F#', freqName: 'F#', type: 'black' }, { name: 'G', freqName: 'G', type: 'white' },{ name: 'G#', freqName: 'G#', type: 'black' }, { name: 'A', freqName: 'A', type: 'white' },{ name: 'A#', freqName: 'A#', type: 'black' }, { name: 'B', freqName: 'B', type: 'white' } ];
         const noteNamesSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
         const pressedComputerKeys = new Set();
-        const computerKeyNoteMapping = { 'a': 'C', 's': 'D', 'd': 'E', 'f': 'F', 'g': 'G', 'h': 'A', 'j': 'B', 'w': 'C#', 'e': 'D#', 't': 'F#', 'y': 'G#', 'u': 'A#', /* 'k' removed, Z/X for octave */};
+        const computerKeyNoteMapping = { 'a': 'C', 's': 'D', 'd': 'E', 'f': 'F', 'g': 'G', 'h': 'A', 'j': 'B', 'w': 'C#', 'e': 'D#', 't': 'F#', 'y': 'G#', 'u': 'A#'}; // k removed
         let midiAccess = null;
 
-        function showMessage(overlayElem, message, buttonText, callback) { /* ... (same) ... */ console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
-        function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { /* ... (same) ... */ if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
+        function showMessage(overlayElem, message, buttonText, callback) { console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
+        function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
 
         async function initializeAudio() {
             console.log("AUDIO_INIT: Starting. Tone.context.state:", Tone.context.state);
@@ -231,7 +231,6 @@
                     tremoloEffect = new Tone.Tremolo({ frequency: parseFloat(dom.lfo1Rate.value), type: dom.lfo1Wave.value, depth: 0, spread: 0 });
                     distortionEffect = new Tone.Distortion(parseFloat(dom.distAmount.value));
                     bitCrusherEffect = new Tone.BitCrusher(parseInt(dom.crusherBits.value));
-                    // mainFilter removed
                     chorusEffect = new Tone.Chorus({ frequency: parseFloat(dom.chorusRate.value), depth: parseFloat(dom.chorusDepth.value), feedback: parseFloat(dom.chorusFeedback.value), delayTime: 3.5, type: "sine" });
                     phaserEffect = new Tone.Phaser({ frequency: parseFloat(dom.phaserFrequency.value), octaves: parseFloat(dom.phaserOctaves.value), baseFrequency: parseFloat(dom.phaserBaseFreq.value) });
                     delayEffect = new Tone.FeedbackDelay({ delayTime: parseFloat(dom.delayTime.value), feedback: parseFloat(dom.delayFeedback.value) });
@@ -371,7 +370,7 @@
         
         function applyAudioChain() { /* ... (same as before - mainFilter removed from chain directly) ... */ if (!synth || !tremoloEffect || !distortionEffect || !bitCrusherEffect || /*!mainFilter ||*/ !chorusEffect || !phaserEffect || !delayEffect || !pingPongDelayEffect || !reverbEffect ) { console.warn("APPLY_CHAIN_WARN: Core audio node(s) not ready."); return; } console.log("APPLY_CHAIN: Rebuilding audio chain..."); const allNodesInChain = [synth, tremoloEffect, distortionEffect, bitCrusherEffect, /*mainFilter,*/ chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect]; allNodesInChain.forEach(node => { try { node.disconnect(); } catch(e) {} }); let currentNode = synth; currentNode.connect(tremoloEffect); currentNode = tremoloEffect; if (dom.distEnable.checked && parseFloat(dom.distWet.value) > 0) { distortionEffect.wet.value = parseFloat(dom.distWet.value); currentNode.connect(distortionEffect); currentNode = distortionEffect; } else { distortionEffect.wet.value = 0; } if (dom.crusherEnable.checked && parseFloat(dom.crusherWet.value) > 0) { bitCrusherEffect.wet.value = parseFloat(dom.crusherWet.value); currentNode.connect(bitCrusherEffect); currentNode = bitCrusherEffect; } else { bitCrusherEffect.wet.value = 0; }  /* Filter is per-voice, not in master chain */ if (dom.chorusEnable.checked && parseFloat(dom.chorusWet.value) > 0) { chorusEffect.wet.value = parseFloat(dom.chorusWet.value); currentNode.connect(chorusEffect); currentNode = chorusEffect; } else { chorusEffect.wet.value = 0; } if (dom.phaserEnable.checked && parseFloat(dom.phaserWet.value) > 0) { phaserEffect.wet.value = parseFloat(dom.phaserWet.value); currentNode.connect(phaserEffect); currentNode = phaserEffect; } else { phaserEffect.wet.value = 0; } if (dom.delayEnable.checked && parseFloat(dom.delayWet.value) > 0) { delayEffect.wet.value = parseFloat(dom.delayWet.value); currentNode.connect(delayEffect); currentNode = delayEffect; } else { delayEffect.wet.value = 0; } if (dom.pingpongEnable.checked && parseFloat(dom.pingpongWet.value) > 0) { pingPongDelayEffect.wet.value = parseFloat(dom.pingpongWet.value); currentNode.connect(pingPongDelayEffect); currentNode = pingPongDelayEffect; } else { pingPongDelayEffect.wet.value = 0; } if (dom.reverbEnable.checked && parseFloat(dom.reverbWet.value) > 0) { reverbEffect.wet.value = parseFloat(dom.reverbWet.value); currentNode.connect(reverbEffect); currentNode = reverbEffect; } else { reverbEffect.wet.value = 0; } currentNode.toDestination(); console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); }
         function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune); break; case 'filterCutoff': if (dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); console.log("LFO_CONN_DEBUG: LFO connected to synth.filterEnvelope.baseFrequency"); } else { console.log("LFO to Filter: No active filter or filter envelope to modulate on synth voices for LFO.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
-        function createOnScreenKeyboard() { dom.keyboard.innerHTML = ''; let whiteKeyCumulativeWidth = 0; const whiteKeyWidth = 38; const blackKeyWidth = 26; for (let oct = 0; oct < 2; oct++) { notesLayout.forEach((note) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${note.freqName}${currentKeyOctave}`; keyElement.textContent = note.name; if (note.type === 'white') { keyElement.classList.add('white-key'); dom.keyboard.appendChild(keyElement); whiteKeyCumulativeWidth += whiteKeyWidth; } else { keyElement.classList.add('black-key'); let anchorRightEdge = 0; if (note.freqName === 'C#') anchorRightEdge = (oct * 7 + 1) * whiteKeyWidth; else if (note.freqName === 'D#') anchorRightEdge = (oct * 7 + 2) * whiteKeyWidth; else if (note.freqName === 'F#') anchorRightEdge = (oct * 7 + 4) * whiteKeyWidth; else if (note.freqName === 'G#') anchorRightEdge = (oct * 7 + 5) * whiteKeyWidth; else if (note.freqName === 'A#') anchorRightEdge = (oct * 7 + 6) * whiteKeyWidth; keyElement.style.left = `${anchorRightEdge}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } }
+        function createOnScreenKeyboard() { dom.keyboard.innerHTML = ''; let currentWhiteKeyOffset = 0; const whiteKeyWidth = 38; const blackKeyWidth = 26; for (let oct = 0; oct < 2; oct++) { notesLayout.forEach((noteLayout) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${noteLayout.freqName}${currentKeyOctave}`; keyElement.textContent = noteLayout.name; if (noteLayout.type === 'white') { keyElement.classList.add('white-key'); keyElement.style.left = `${currentWhiteKeyOffset}px`; dom.keyboard.appendChild(keyElement); currentWhiteKeyOffset += whiteKeyWidth; } else { keyElement.classList.add('black-key'); keyElement.style.left = `${currentWhiteKeyOffset - (whiteKeyWidth/2)}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } }
         function updateKeyVisualState(fullNoteName, isActive) { /* ... (same) ... */ const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.fullNote === fullNoteName) { key.classList.toggle('active', isActive); } }); }
         function playNote(fullNoteName, velocity = 0.75) { /* ... (same) ... */ if (!synth || Tone.context.state !== 'running') return; try { synth.triggerAttack(fullNoteName, Tone.now(), velocity); updateKeyVisualState(fullNoteName, true); } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } }
         function releaseNote(fullNoteName) { /* ... (same) ... */ if (!synth) return; try { synth.triggerRelease(fullNoteName, Tone.now() + 0.05); updateKeyVisualState(fullNoteName, false); } catch (error) { console.error(`Error releasing ${fullNoteName}:`, error); } }
@@ -383,54 +382,88 @@
         function onMIDIMessage(message) { /* ... (same) ... */ if (!synth) return; const [command, note, velocity] = message.data; const noteNameFull = midiNoteToNoteNameAndOctave(note); const scaledVelocity = velocity / 127; if ((command & 0xF0) === 0x90 && velocity > 0) { playNote(noteNameFull, scaledVelocity); } else if ((command & 0xF0) === 0x80 || ((command & 0xF0) === 0x90 && velocity === 0)) { releaseNote(noteNameFull); } }
         
         // --- UI Control Event Listeners ---
-        dom.startAudioButton.addEventListener('click', async () => { dom.audioContextMessageOverlay.classList.remove('visible'); const success = await initializeAudio(); if(success) console.log("Audio init OK from Start."); else console.error("Audio init FAILED from Start."); });
-        dom.oscType.addEventListener('change', updateOscillatorType);
+        dom.startAudioButton.addEventListener('click', async (e) => { e.target.blur(); dom.audioContextMessageOverlay.classList.remove('visible'); const success = await initializeAudio(); if(success) console.log("Audio init OK from Start."); else console.error("Audio init FAILED from Start."); });
+        dom.oscType.addEventListener('change', (e) => { updateOscillatorType(); e.target.blur(); });
         // Osc params
-        dom.pwmSpeed.addEventListener('input', () => { updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.fmHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); applyCurrentOscillatorSpecificSettings(dom.oscType.value);});
-        dom.fmModIndex.addEventListener('input', () => { updateSliderDisplay(dom.fmModIndex, dom.fmModIndexDisplay, '', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value);});
-        dom.supersawCount.addEventListener('input', () => { updateSliderDisplay(dom.supersawCount, dom.supersawCountDisplay, '', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value);});
-        dom.supersawSpread.addEventListener('input', () => { updateSliderDisplay(dom.supersawSpread, dom.supersawSpreadDisplay, ' cents', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value);});
-        dom.resonantBodyHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.resonantBodyHarmonicity, dom.resonantBodyHarmonicityDisplay, '', 1); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.resonantBodyModIndex.addEventListener('input', () => { updateSliderDisplay(dom.resonantBodyModIndex, dom.resonantBodyModIndexDisplay, '', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.formantVoiceHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.formantVoiceModIndex.addEventListener('input', () => { updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
+        const oscParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); e.target.blur(); };
+        dom.pwmSpeed.addEventListener('input', (e) => { updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); oscParamHandler(e); });
+        dom.fmHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); oscParamHandler(e);});
+        dom.fmModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.fmModIndex, dom.fmModIndexDisplay, '', 0); oscParamHandler(e);});
+        dom.supersawCount.addEventListener('input', (e) => { updateSliderDisplay(dom.supersawCount, dom.supersawCountDisplay, '', 0); oscParamHandler(e);});
+        dom.supersawSpread.addEventListener('input', (e) => { updateSliderDisplay(dom.supersawSpread, dom.supersawSpreadDisplay, ' cents', 0); oscParamHandler(e);});
+        dom.resonantBodyHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.resonantBodyHarmonicity, dom.resonantBodyHarmonicityDisplay, '', 1); oscParamHandler(e); });
+        dom.resonantBodyModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.resonantBodyModIndex, dom.resonantBodyModIndexDisplay, '', 0); oscParamHandler(e); });
+        dom.formantVoiceHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); oscParamHandler(e); });
+        dom.formantVoiceModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0); oscParamHandler(e); });
 
-        // Octave buttons are now decorative, actual change is via Z/X keys
+        // Amplitude Env & Volume
+        function updateVolumeAndEnvelopes(event) { applyCurrentOscillatorSpecificSettings(dom.oscType.value); if(event && event.target) event.target.blur(); } 
+        dom.volume.addEventListener('input', (e) => {updateSliderDisplay(dom.volume, dom.volumeDisplay, 'dB',0); updateVolumeAndEnvelopes(e);});
+        dom.ampEnvAttack.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvAttack, dom.ampEnvAttackDisplay, 's', 3); updateVolumeAndEnvelopes(e); });
+        dom.ampEnvDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvDecay, dom.ampEnvDecayDisplay, 's', 2); updateVolumeAndEnvelopes(e); });
+        dom.ampEnvSustain.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvSustain, dom.ampEnvSustainDisplay, '', 2); updateVolumeAndEnvelopes(e); });
+        dom.ampEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvRelease, dom.ampEnvReleaseDisplay, 's', 2); updateVolumeAndEnvelopes(e); });
+
+        // Filter Env & Params
+        dom.filterType.addEventListener('change', (e) => {applyCurrentOscillatorSpecificSettings(dom.oscType.value); /*applyAudioChain();*/ e.target.blur(); });
+        const filterParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); e.target.blur(); };
+        dom.filterCutoff.addEventListener('input', (e) => { updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); filterParamHandler(e); });
+        dom.filterResonance.addEventListener('input', (e) => { updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q'); filterParamHandler(e); });
+        dom.filterEnvAttack.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvAttack, dom.filterEnvAttackDisplay, 's', 3); filterParamHandler(e); });
+        dom.filterEnvDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvDecay, dom.filterEnvDecayDisplay, 's', 2); filterParamHandler(e); });
+        dom.filterEnvSustain.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvSustain, dom.filterEnvSustainDisplay, '', 2); filterParamHandler(e); });
+        dom.filterEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvRelease, dom.filterEnvReleaseDisplay, 's', 2); filterParamHandler(e); });
+        dom.filterEnvAmount.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvAmount, dom.filterEnvAmountDisplay, ' oct', 1); filterParamHandler(e); });
+
+        // LFO Listeners
+        const lfoUpdateHandler = (e) => { updateLFO1Connections(); e.target.blur(); };
+        dom.lfo1Enable.addEventListener('change', lfoUpdateHandler); 
+        dom.lfo1Wave.addEventListener('change', lfoUpdateHandler); 
+        dom.lfo1PulseWidth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); if (lfo1 && dom.lfo1Wave.value === 'pulse') lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); e.target.blur();});
+        dom.lfo1PwmFreq.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz'); if (lfo1 && dom.lfo1Wave.value === 'pwm') lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); e.target.blur();});
+        dom.lfo1Rate.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Rate, dom.lfo1RateDisplay, 'Hz'); lfoUpdateHandler(e); });
+        dom.lfo1Depth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2); lfoUpdateHandler(e); });
+        dom.lfo1Destination.addEventListener('change', lfoUpdateHandler);
+
+        // Effect Control Listeners
+        const effectToggleHandler = (e) => { applyAudioChain(); e.target.blur(); };
+        const effectWetHandler = (slider, display, unit, decimals, e) => { updateSliderDisplay(slider, display, unit, decimals); applyAudioChain(); e.target.blur(); };
+        const effectParamHandler = (slider, display, unit, decimals, effectNode, paramName, e) => { updateSliderDisplay(slider, display, unit, decimals); if(effectNode) effectNode[paramName] = parseFloat(slider.value); e.target.blur(); };
         
-        function updateVolumeAndEnvelopes() { applyCurrentOscillatorSpecificSettings(dom.oscType.value); } 
-        dom.volume.addEventListener('input', updateVolumeAndEnvelopes);
-        dom.ampEnvAttack.addEventListener('input', () => { updateSliderDisplay(dom.ampEnvAttack, dom.ampEnvAttackDisplay, 's', 3); updateVolumeAndEnvelopes(); });
-        dom.ampEnvDecay.addEventListener('input', () => { updateSliderDisplay(dom.ampEnvDecay, dom.ampEnvDecayDisplay, 's', 2); updateVolumeAndEnvelopes(); });
-        dom.ampEnvSustain.addEventListener('input', () => { updateSliderDisplay(dom.ampEnvSustain, dom.ampEnvSustainDisplay, '', 2); updateVolumeAndEnvelopes(); });
-        dom.ampEnvRelease.addEventListener('input', () => { updateSliderDisplay(dom.ampEnvRelease, dom.ampEnvReleaseDisplay, 's', 2); updateVolumeAndEnvelopes(); });
+        dom.distEnable.addEventListener('change', effectToggleHandler); 
+        dom.distAmount.addEventListener('input', (e) => effectParamHandler(dom.distAmount, dom.distAmountDisplay, '', 2, distortionEffect, 'distortion', e)); 
+        dom.distWet.addEventListener('input', (e) => effectWetHandler(dom.distWet, dom.distWetDisplay, '', 2, e));
+        
+        dom.crusherEnable.addEventListener('change', effectToggleHandler); 
+        dom.crusherBits.addEventListener('input', (e) => { updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, ' bits', 0); if(bitCrusherEffect) bitCrusherEffect.bits.value = parseInt(dom.crusherBits.value); e.target.blur(); }); 
+        dom.crusherWet.addEventListener('input', (e) => effectWetHandler(dom.crusherWet, dom.crusherWetDisplay, '', 2, e));
+        
+        dom.chorusEnable.addEventListener('change', effectToggleHandler); 
+        dom.chorusRate.addEventListener('input', (e) => effectParamHandler(dom.chorusRate, dom.chorusRateDisplay, 'Hz', 1, chorusEffect.frequency, 'value', e)); 
+        dom.chorusDepth.addEventListener('input', (e) => effectParamHandler(dom.chorusDepth, dom.chorusDepthDisplay, '', 2, chorusEffect, 'depth', e)); 
+        dom.chorusFeedback.addEventListener('input', (e) => effectParamHandler(dom.chorusFeedback, dom.chorusFeedbackDisplay, '', 2, chorusEffect.feedback, 'value', e)); 
+        dom.chorusWet.addEventListener('input', (e) => effectWetHandler(dom.chorusWet, dom.chorusWetDisplay, '', 2, e));
 
-        dom.filterType.addEventListener('change', () => {applyCurrentOscillatorSpecificSettings(dom.oscType.value); /*applyAudioChain(); No longer needed here as filter is per voice*/ });
-        dom.filterCutoff.addEventListener('input', () => { updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.filterResonance.addEventListener('input', () => { updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q'); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.filterEnvAttack.addEventListener('input', () => { updateSliderDisplay(dom.filterEnvAttack, dom.filterEnvAttackDisplay, 's', 3); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.filterEnvDecay.addEventListener('input', () => { updateSliderDisplay(dom.filterEnvDecay, dom.filterEnvDecayDisplay, 's', 2); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.filterEnvSustain.addEventListener('input', () => { updateSliderDisplay(dom.filterEnvSustain, dom.filterEnvSustainDisplay, '', 2); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.filterEnvRelease.addEventListener('input', () => { updateSliderDisplay(dom.filterEnvRelease, dom.filterEnvReleaseDisplay, 's', 2); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
-        dom.filterEnvAmount.addEventListener('input', () => { updateSliderDisplay(dom.filterEnvAmount, dom.filterEnvAmountDisplay, ' oct', 1); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
+        dom.phaserEnable.addEventListener('change', effectToggleHandler);
+        dom.phaserFrequency.addEventListener('input', (e) => effectParamHandler(dom.phaserFrequency, dom.phaserFrequencyDisplay, 'Hz', 1, phaserEffect.frequency, 'value', e));
+        dom.phaserOctaves.addEventListener('input', (e) => effectParamHandler(dom.phaserOctaves, dom.phaserOctavesDisplay, '', 1, phaserEffect, 'octaves', e));
+        dom.phaserBaseFreq.addEventListener('input', (e) => effectParamHandler(dom.phaserBaseFreq, dom.phaserBaseFreqDisplay, 'Hz', 0, phaserEffect, 'baseFrequency', e));
+        dom.phaserWet.addEventListener('input', (e) => effectWetHandler(dom.phaserWet, dom.phaserWetDisplay, '', 2, e));
 
+        dom.delayEnable.addEventListener('change', effectToggleHandler);
+        dom.delayTime.addEventListener('input', (e) => effectParamHandler(dom.delayTime, dom.delayTimeDisplay, 's', 2, delayEffect.delayTime, 'value', e));
+        dom.delayFeedback.addEventListener('input', (e) => effectParamHandler(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2, delayEffect.feedback, 'value', e));
+        dom.delayWet.addEventListener('input', (e) => effectWetHandler(dom.delayWet, dom.delayWetDisplay, '', 2, e));
 
-        dom.lfo1Enable.addEventListener('change', updateLFO1Connections); 
-        dom.lfo1Wave.addEventListener('change', updateLFO1Connections); 
-        dom.lfo1PulseWidth.addEventListener('input', () => { updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); if (lfo1 && dom.lfo1Wave.value === 'pulse') lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value);});
-        dom.lfo1PwmFreq.addEventListener('input', () => { updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz'); if (lfo1 && dom.lfo1Wave.value === 'pwm') lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value);});
-        dom.lfo1Rate.addEventListener('input', () => { updateSliderDisplay(dom.lfo1Rate, dom.lfo1RateDisplay, 'Hz'); updateLFO1Connections(); });
-        dom.lfo1Depth.addEventListener('input', () => { updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2); updateLFO1Connections(); });
-        dom.lfo1Destination.addEventListener('change', updateLFO1Connections);
+        dom.pingpongEnable.addEventListener('change', effectToggleHandler);
+        dom.pingpongDelayTime.addEventListener('input', (e) => effectParamHandler(dom.pingpongDelayTime, dom.pingpongDelayTimeDisplay, 's', 2, pingPongDelayEffect.delayTime, 'value', e));
+        dom.pingpongFeedback.addEventListener('input', (e) => effectParamHandler(dom.pingpongFeedback, dom.pingpongFeedbackDisplay, '', 2, pingPongDelayEffect.feedback, 'value', e));
+        dom.pingpongWet.addEventListener('input', (e) => effectWetHandler(dom.pingpongWet, dom.pingpongWetDisplay, '', 2, e));
+        
+        dom.reverbEnable.addEventListener('change', effectToggleHandler);
+        dom.reverbDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); if(reverbEffect) reverbEffect.decay = parseFloat(dom.reverbDecay.value); e.target.blur(); });
+        dom.reverbWet.addEventListener('input', (e) => effectWetHandler(dom.reverbWet, dom.reverbWetDisplay, '', 2, e));
 
-        // Effect Control Listeners 
-        dom.distEnable.addEventListener('change', applyAudioChain); dom.distAmount.addEventListener('input', () => { updateSliderDisplay(dom.distAmount, dom.distAmountDisplay, '', 2); if(distortionEffect) distortionEffect.distortion = parseFloat(dom.distAmount.value); }); dom.distWet.addEventListener('input', () => { updateSliderDisplay(dom.distWet, dom.distWetDisplay, '', 2); applyAudioChain(); });
-        dom.crusherEnable.addEventListener('change', applyAudioChain); dom.crusherBits.addEventListener('input', () => { updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, ' bits', 0); if(bitCrusherEffect) bitCrusherEffect.bits.value = parseInt(dom.crusherBits.value); }); dom.crusherWet.addEventListener('input', () => { updateSliderDisplay(dom.crusherWet, dom.crusherWetDisplay, '', 2); applyAudioChain(); });
-        dom.chorusEnable.addEventListener('change', applyAudioChain); dom.chorusRate.addEventListener('input', () => { updateSliderDisplay(dom.chorusRate, dom.chorusRateDisplay, 'Hz'); if(chorusEffect) chorusEffect.frequency.value = parseFloat(dom.chorusRate.value); }); dom.chorusDepth.addEventListener('input', () => { updateSliderDisplay(dom.chorusDepth, dom.chorusDepthDisplay, '', 2); if(chorusEffect) chorusEffect.depth = parseFloat(dom.chorusDepth.value); }); dom.chorusFeedback.addEventListener('input', () => { updateSliderDisplay(dom.chorusFeedback, dom.chorusFeedbackDisplay, '', 2); if(chorusEffect) chorusEffect.feedback.value = parseFloat(dom.chorusFeedback.value); }); dom.chorusWet.addEventListener('input', () => { updateSliderDisplay(dom.chorusWet, dom.chorusWetDisplay, '', 2); applyAudioChain(); });
-        dom.phaserEnable.addEventListener('change', applyAudioChain); dom.phaserFrequency.addEventListener('input', () => { updateSliderDisplay(dom.phaserFrequency, dom.phaserFrequencyDisplay, 'Hz'); if(phaserEffect) phaserEffect.frequency.value = parseFloat(dom.phaserFrequency.value); }); dom.phaserOctaves.addEventListener('input', () => { updateSliderDisplay(dom.phaserOctaves, dom.phaserOctavesDisplay, '', 1); if(phaserEffect) phaserEffect.octaves = parseFloat(dom.phaserOctaves.value); }); dom.phaserBaseFreq.addEventListener('input', () => { updateSliderDisplay(dom.phaserBaseFreq, dom.phaserBaseFreqDisplay, 'Hz',0); if(phaserEffect) phaserEffect.baseFrequency = parseFloat(dom.phaserBaseFreq.value); }); dom.phaserWet.addEventListener('input', () => { updateSliderDisplay(dom.phaserWet, dom.phaserWetDisplay, '', 2); applyAudioChain(); });
-        dom.delayEnable.addEventListener('change', applyAudioChain); dom.delayTime.addEventListener('input', () => { updateSliderDisplay(dom.delayTime, dom.delayTimeDisplay, 's', 2); if(delayEffect) delayEffect.delayTime.value = parseFloat(dom.delayTime.value); }); dom.delayFeedback.addEventListener('input', () => { updateSliderDisplay(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2); if(delayEffect) delayEffect.feedback.value = parseFloat(dom.delayFeedback.value); }); dom.delayWet.addEventListener('input', () => { updateSliderDisplay(dom.delayWet, dom.delayWetDisplay, '', 2); applyAudioChain(); });
-        dom.pingpongEnable.addEventListener('change', applyAudioChain); dom.pingpongDelayTime.addEventListener('input', () => { updateSliderDisplay(dom.pingpongDelayTime, dom.pingpongDelayTimeDisplay, 's', 2); if(pingPongDelayEffect) pingPongDelayEffect.delayTime.value = parseFloat(dom.pingpongDelayTime.value); }); dom.pingpongFeedback.addEventListener('input', () => { updateSliderDisplay(dom.pingpongFeedback, dom.pingpongFeedbackDisplay, '', 2); if(pingPongDelayEffect) pingPongDelayEffect.feedback.value = parseFloat(dom.pingpongFeedback.value); }); dom.pingpongWet.addEventListener('input', () => { updateSliderDisplay(dom.pingpongWet, dom.pingpongWetDisplay, '', 2); applyAudioChain(); });
-        dom.reverbEnable.addEventListener('change', applyAudioChain); dom.reverbDecay.addEventListener('input', () => { updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); if(reverbEffect) reverbEffect.decay = parseFloat(dom.reverbDecay.value); }); dom.reverbWet.addEventListener('input', () => { updateSliderDisplay(dom.reverbWet, dom.reverbWetDisplay, '', 2); applyAudioChain(); });
 
         // --- Initial Page Load ---
         window.addEventListener('load', () => {
@@ -456,7 +489,6 @@
             updateSliderDisplay(dom.pingpongDelayTime, dom.pingpongDelayTimeDisplay, 's', 2); updateSliderDisplay(dom.pingpongFeedback, dom.pingpongFeedbackDisplay, '', 2); updateSliderDisplay(dom.pingpongWet, dom.pingpongWetDisplay, '', 2);
             updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); updateSliderDisplay(dom.reverbWet, dom.reverbWetDisplay, '', 2);
             
-            // Initial visibility of contextual controls
             dom.pwmControls.classList.toggle('hidden', dom.oscType.value !== 'pwm'); 
             dom.fmControls.classList.toggle('hidden', dom.oscType.value !== 'fmsine');
             dom.supersawControls.classList.toggle('hidden', dom.oscType.value !== 'supersaw');
