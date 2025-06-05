@@ -14,27 +14,36 @@
             background-color: #1a202c; 
             color: #e2e8f0; 
         }
-        .keyboard-container { /* Added container for potential scrolling on small screens */
+        .keyboard-container {
             width: 100%;
-            overflow-x: auto; /* Allow horizontal scrolling for keyboard if it's too wide */
-            padding-bottom: 10px; /* Space for scrollbar if it appears */
+            overflow-x: auto; 
+            padding-bottom: 10px; 
         }
         .keyboard { 
             display: flex; 
-            justify-content: flex-start; /* Start keys from the left */
+            justify-content: flex-start; 
             align-items: flex-start; 
             padding: 20px; 
             background-color: #2d3748; 
             border-radius: 8px; 
             box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
             position: relative; 
-            min-width: min-content; /* Ensure keyboard div takes at least the width of its content */
+            min-width: min-content; 
             -webkit-user-select: none; -ms-user-select: none; user-select: none; 
         }
         .key { border: 1px solid #4a5568; border-radius: 5px; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; font-size: 10px; padding-bottom: 5px; transition: background-color 0.1s ease; box-sizing: border-box; }
-        .white-key { background-color: #f7fafc; color: #2d3748; width: 38px; /* Slightly narrower */ height: 170px; /* Slightly shorter */ z-index: 1; margin-right: -1px; }
+        .white-key { background-color: #f7fafc; color: #2d3748; width: 38px; height: 170px; z-index: 1; margin-right: -1px; /* Overlap borders slightly */ }
         .white-key:active, .white-key.active { background-color: #a0aec0; }
-        .black-key { background-color: #2d3748; color: #cbd5e0; width: 26px; /* Slightly narrower */ height: 100px; /* Slightly shorter */ position: absolute; z-index: 2; /* margin-left is calculated in JS */ border: 1px solid #1a202c;}
+        .black-key { 
+            background-color: #2d3748; 
+            color: #cbd5e0; 
+            width: 26px; 
+            height: 100px; 
+            position: absolute; 
+            z-index: 2; 
+            border: 1px solid #1a202c;
+            margin-left: -13px; /* Half of its width to center it over the division */
+        }
         .black-key:active, .black-key.active { background-color: #4a5568; }
         
         .controls-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; width: 100%; max-width: 1400px; }
@@ -110,7 +119,7 @@
                 </div>
                 <label for="octave-display-label">Starting Octave: <span id="octave-display">4</span></label>
                 <div class="button-group">
-                    <button id="octave-down-btn" class="opacity-50 cursor-not-allowed">-</button> <!-- Made buttons visually disabled -->
+                    <button id="octave-down-btn" class="opacity-50 cursor-not-allowed">-</button> 
                     <button id="octave-up-btn" class="ml-2 opacity-50 cursor-not-allowed">+</button>
                 </div>
             </div>
@@ -170,7 +179,7 @@
             supersawControls: document.getElementById('supersaw-controls'), supersawCount: document.getElementById('supersaw-count'), supersawCountDisplay: document.getElementById('supersaw-count-display'), supersawSpread: document.getElementById('supersaw-spread'), supersawSpreadDisplay: document.getElementById('supersaw-spread-display'),
             resonantBodyControls: document.getElementById('resonantbody-controls'), resonantBodyHarmonicity: document.getElementById('resonantbody-harmonicity'), resonantBodyHarmonicityDisplay: document.getElementById('resonantbody-harmonicity-display'), resonantBodyModIndex: document.getElementById('resonantbody-mod-index'), resonantBodyModIndexDisplay: document.getElementById('resonantbody-mod-index-display'),
             formantVoiceControls: document.getElementById('formantvoice-controls'), formantVoiceHarmonicity: document.getElementById('formantvoice-harmonicity'), formantVoiceHarmonicityDisplay: document.getElementById('formantvoice-harmonicity-display'), formantVoiceModIndex: document.getElementById('formantvoice-mod-index'), formantVoiceModIndexDisplay: document.getElementById('formantvoice-mod-index-display'),
-            octaveDisplay: document.getElementById('octave-display'), /* octaveUpBtn: document.getElementById('octave-up-btn'), octaveDownBtn: document.getElementById('octave-down-btn'), */ // Buttons are now decorative
+            octaveDisplay: document.getElementById('octave-display'), // octaveUpBtn and octaveDownBtn removed from here as they are decorative
             volume: document.getElementById('volume'), volumeDisplay: document.getElementById('volume-display'), 
             ampEnvAttack: document.getElementById('amp-env-attack'), ampEnvAttackDisplay: document.getElementById('amp-env-attack-display'),
             ampEnvDecay: document.getElementById('amp-env-decay'), ampEnvDecayDisplay: document.getElementById('amp-env-decay-display'),
@@ -272,7 +281,7 @@
             dom.resonantBodyControls.classList.add('hidden'); 
             dom.formantVoiceControls.classList.add('hidden');
 
-            currentPolySynthVoiceType = Tone.MonoSynth; // All current types use MonoSynth
+            currentPolySynthVoiceType = Tone.MonoSynth; 
 
             switch (newSelectedOscType) {
                 case 'pwm': dom.pwmControls.classList.remove('hidden'); break;
@@ -303,7 +312,6 @@
                 }
             };
 
-            // All current oscillator types use Tone.MonoSynth. Configure its filter/filterEnvelope.
             let filterTypeString = "lowpass"; 
             let filterRolloff = -24; 
             const selectedUIFilterType = dom.filterType.value;
@@ -361,28 +369,9 @@
             }
         }
         
-        function applyAudioChain() { 
-            if (!synth || !tremoloEffect || !distortionEffect || !bitCrusherEffect || /*!mainFilter ||*/ !chorusEffect || !phaserEffect || !delayEffect || !pingPongDelayEffect || !reverbEffect ) { 
-                console.warn("APPLY_CHAIN_WARN: Core audio node(s) not ready."); return; 
-            } 
-            console.log("APPLY_CHAIN: Rebuilding audio chain..."); 
-            const allNodesInChain = [synth, tremoloEffect, distortionEffect, bitCrusherEffect, /*mainFilter,*/ chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect]; 
-            allNodesInChain.forEach(node => { try { node.disconnect(); } catch(e) {} }); 
-            let currentNode = synth; 
-            currentNode.connect(tremoloEffect); currentNode = tremoloEffect; 
-            if (dom.distEnable.checked && parseFloat(dom.distWet.value) > 0) { distortionEffect.wet.value = parseFloat(dom.distWet.value); currentNode.connect(distortionEffect); currentNode = distortionEffect; } else { distortionEffect.wet.value = 0; } 
-            if (dom.crusherEnable.checked && parseFloat(dom.crusherWet.value) > 0) { bitCrusherEffect.wet.value = parseFloat(dom.crusherWet.value); currentNode.connect(bitCrusherEffect); currentNode = bitCrusherEffect; } else { bitCrusherEffect.wet.value = 0; }  
-            // Filter is per-voice (within MonoSynth), so it's not part of this master effects chain.
-            if (dom.chorusEnable.checked && parseFloat(dom.chorusWet.value) > 0) { chorusEffect.wet.value = parseFloat(dom.chorusWet.value); currentNode.connect(chorusEffect); currentNode = chorusEffect; } else { chorusEffect.wet.value = 0; } 
-            if (dom.phaserEnable.checked && parseFloat(dom.phaserWet.value) > 0) { phaserEffect.wet.value = parseFloat(dom.phaserWet.value); currentNode.connect(phaserEffect); currentNode = phaserEffect; } else { phaserEffect.wet.value = 0; } 
-            if (dom.delayEnable.checked && parseFloat(dom.delayWet.value) > 0) { delayEffect.wet.value = parseFloat(dom.delayWet.value); currentNode.connect(delayEffect); currentNode = delayEffect; } else { delayEffect.wet.value = 0; } 
-            if (dom.pingpongEnable.checked && parseFloat(dom.pingpongWet.value) > 0) { pingPongDelayEffect.wet.value = parseFloat(dom.pingpongWet.value); currentNode.connect(pingPongDelayEffect); currentNode = pingPongDelayEffect; } else { pingPongDelayEffect.wet.value = 0; } 
-            if (dom.reverbEnable.checked && parseFloat(dom.reverbWet.value) > 0) { reverbEffect.wet.value = parseFloat(dom.reverbWet.value); currentNode.connect(reverbEffect); currentNode = reverbEffect; } else { reverbEffect.wet.value = 0; } 
-            currentNode.toDestination(); 
-            console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); 
-        }
+        function applyAudioChain() { /* ... (same as before - mainFilter removed from chain directly) ... */ if (!synth || !tremoloEffect || !distortionEffect || !bitCrusherEffect || /*!mainFilter ||*/ !chorusEffect || !phaserEffect || !delayEffect || !pingPongDelayEffect || !reverbEffect ) { console.warn("APPLY_CHAIN_WARN: Core audio node(s) not ready."); return; } console.log("APPLY_CHAIN: Rebuilding audio chain..."); const allNodesInChain = [synth, tremoloEffect, distortionEffect, bitCrusherEffect, /*mainFilter,*/ chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect]; allNodesInChain.forEach(node => { try { node.disconnect(); } catch(e) {} }); let currentNode = synth; currentNode.connect(tremoloEffect); currentNode = tremoloEffect; if (dom.distEnable.checked && parseFloat(dom.distWet.value) > 0) { distortionEffect.wet.value = parseFloat(dom.distWet.value); currentNode.connect(distortionEffect); currentNode = distortionEffect; } else { distortionEffect.wet.value = 0; } if (dom.crusherEnable.checked && parseFloat(dom.crusherWet.value) > 0) { bitCrusherEffect.wet.value = parseFloat(dom.crusherWet.value); currentNode.connect(bitCrusherEffect); currentNode = bitCrusherEffect; } else { bitCrusherEffect.wet.value = 0; }  /* Filter is per-voice, not in master chain */ if (dom.chorusEnable.checked && parseFloat(dom.chorusWet.value) > 0) { chorusEffect.wet.value = parseFloat(dom.chorusWet.value); currentNode.connect(chorusEffect); currentNode = chorusEffect; } else { chorusEffect.wet.value = 0; } if (dom.phaserEnable.checked && parseFloat(dom.phaserWet.value) > 0) { phaserEffect.wet.value = parseFloat(dom.phaserWet.value); currentNode.connect(phaserEffect); currentNode = phaserEffect; } else { phaserEffect.wet.value = 0; } if (dom.delayEnable.checked && parseFloat(dom.delayWet.value) > 0) { delayEffect.wet.value = parseFloat(dom.delayWet.value); currentNode.connect(delayEffect); currentNode = delayEffect; } else { delayEffect.wet.value = 0; } if (dom.pingpongEnable.checked && parseFloat(dom.pingpongWet.value) > 0) { pingPongDelayEffect.wet.value = parseFloat(dom.pingpongWet.value); currentNode.connect(pingPongDelayEffect); currentNode = pingPongDelayEffect; } else { pingPongDelayEffect.wet.value = 0; } if (dom.reverbEnable.checked && parseFloat(dom.reverbWet.value) > 0) { reverbEffect.wet.value = parseFloat(dom.reverbWet.value); currentNode.connect(reverbEffect); currentNode = reverbEffect; } else { reverbEffect.wet.value = 0; } currentNode.toDestination(); console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); }
         function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune); break; case 'filterCutoff': if (dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); console.log("LFO_CONN_DEBUG: LFO connected to synth.filterEnvelope.baseFrequency"); } else { console.log("LFO to Filter: No active filter or filter envelope to modulate on synth voices for LFO.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
-        function createOnScreenKeyboard() { /* ... (same) ... */ dom.keyboard.innerHTML = ''; let whiteKeyIndex = 0; for (let oct = 0; oct < 2; oct++) { notesLayout.forEach((note) => { const keyElement = document.createElement('div'); keyElement.classList.add('key', note.type === 'white' ? 'white-key' : 'black-key'); keyElement.textContent = note.name; const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${note.freqName}${currentKeyOctave}`; if (note.type === 'black') { keyElement.style.left = `${(oct * 7 * 38) + (whiteKeyIndex -1) * 38 + 38 - (26/2)}px`; } else { whiteKeyIndex++; if(oct > 0 && note.freqName === 'C') whiteKeyIndex = 7 * oct +1; /* Reset for next octave white keys*/ } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); dom.keyboard.appendChild(keyElement); }); if (oct === 0) whiteKeyIndex=0; /* Reset for positioning black keys in the second octave correctly relative to its start */ } }
+        function createOnScreenKeyboard() { dom.keyboard.innerHTML = ''; let whiteKeyCumulativeWidth = 0; const whiteKeyWidth = 38; const blackKeyWidth = 26; for (let oct = 0; oct < 2; oct++) { notesLayout.forEach((note) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${note.freqName}${currentKeyOctave}`; keyElement.textContent = note.name; if (note.type === 'white') { keyElement.classList.add('white-key'); dom.keyboard.appendChild(keyElement); whiteKeyCumulativeWidth += whiteKeyWidth; } else { keyElement.classList.add('black-key'); let anchorRightEdge = 0; if (note.freqName === 'C#') anchorRightEdge = (oct * 7 + 1) * whiteKeyWidth; else if (note.freqName === 'D#') anchorRightEdge = (oct * 7 + 2) * whiteKeyWidth; else if (note.freqName === 'F#') anchorRightEdge = (oct * 7 + 4) * whiteKeyWidth; else if (note.freqName === 'G#') anchorRightEdge = (oct * 7 + 5) * whiteKeyWidth; else if (note.freqName === 'A#') anchorRightEdge = (oct * 7 + 6) * whiteKeyWidth; keyElement.style.left = `${anchorRightEdge}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } }
         function updateKeyVisualState(fullNoteName, isActive) { /* ... (same) ... */ const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.fullNote === fullNoteName) { key.classList.toggle('active', isActive); } }); }
         function playNote(fullNoteName, velocity = 0.75) { /* ... (same) ... */ if (!synth || Tone.context.state !== 'running') return; try { synth.triggerAttack(fullNoteName, Tone.now(), velocity); updateKeyVisualState(fullNoteName, true); } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } }
         function releaseNote(fullNoteName) { /* ... (same) ... */ if (!synth) return; try { synth.triggerRelease(fullNoteName, Tone.now() + 0.05); updateKeyVisualState(fullNoteName, false); } catch (error) { console.error(`Error releasing ${fullNoteName}:`, error); } }
@@ -407,7 +396,7 @@
         dom.formantVoiceHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
         dom.formantVoiceModIndex.addEventListener('input', () => { updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
 
-        // Removed dom.octaveUp/Down event listeners
+        // Octave buttons are now decorative, actual change is via Z/X keys
         
         function updateVolumeAndEnvelopes() { applyCurrentOscillatorSpecificSettings(dom.oscType.value); } 
         dom.volume.addEventListener('input', updateVolumeAndEnvelopes);
@@ -416,7 +405,7 @@
         dom.ampEnvSustain.addEventListener('input', () => { updateSliderDisplay(dom.ampEnvSustain, dom.ampEnvSustainDisplay, '', 2); updateVolumeAndEnvelopes(); });
         dom.ampEnvRelease.addEventListener('input', () => { updateSliderDisplay(dom.ampEnvRelease, dom.ampEnvReleaseDisplay, 's', 2); updateVolumeAndEnvelopes(); });
 
-        dom.filterType.addEventListener('change', () => {applyCurrentOscillatorSpecificSettings(dom.oscType.value); applyAudioChain(); });
+        dom.filterType.addEventListener('change', () => {applyCurrentOscillatorSpecificSettings(dom.oscType.value); /*applyAudioChain(); No longer needed here as filter is per voice*/ });
         dom.filterCutoff.addEventListener('input', () => { updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
         dom.filterResonance.addEventListener('input', () => { updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q'); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
         dom.filterEnvAttack.addEventListener('input', () => { updateSliderDisplay(dom.filterEnvAttack, dom.filterEnvAttackDisplay, 's', 3); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
@@ -449,7 +438,6 @@
             dom.octaveDisplay.textContent = startingOctave; 
             createOnScreenKeyboard(); 
             
-            // Update all displays for initial values
             updateSliderDisplay(dom.volume, dom.volumeDisplay, 'dB', 0); 
             updateSliderDisplay(dom.ampEnvAttack, dom.ampEnvAttackDisplay, 's', 3); updateSliderDisplay(dom.ampEnvDecay, dom.ampEnvDecayDisplay, 's', 2); updateSliderDisplay(dom.ampEnvSustain, dom.ampEnvSustainDisplay, '', 2); updateSliderDisplay(dom.ampEnvRelease, dom.ampEnvReleaseDisplay, 's', 2);
             updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q');
