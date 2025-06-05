@@ -175,7 +175,7 @@
 
 
         // --- DOM Element Grabbing (Centralized) ---
-        const dom = { /* ... (all previous dom elements PLUS ringmod and granular) ... */
+        const dom = { /* ... (all DOM elements) ... */
             oscType: document.getElementById('osc-type'), pwmControls: document.getElementById('pwm-controls'), pwmSpeed: document.getElementById('pwm-speed'), pwmSpeedDisplay: document.getElementById('pwm-speed-display'), fmControls: document.getElementById('fm-controls'), fmHarmonicity: document.getElementById('fm-harmonicity'), fmHarmonicityDisplay: document.getElementById('fm-harmonicity-display'), fmModIndex: document.getElementById('fm-mod-index'), fmModIndexDisplay: document.getElementById('fm-mod-index-display'), 
             supersawControls: document.getElementById('supersaw-controls'), supersawCount: document.getElementById('supersaw-count'), supersawCountDisplay: document.getElementById('supersaw-count-display'), supersawSpread: document.getElementById('supersaw-spread'), supersawSpreadDisplay: document.getElementById('supersaw-spread-display'),
             resonantBodyControls: document.getElementById('resonantbody-controls'), resonantBodyHarmonicity: document.getElementById('resonantbody-harmonicity'), resonantBodyHarmonicityDisplay: document.getElementById('resonantbody-harmonicity-display'), resonantBodyModIndex: document.getElementById('resonantbody-mod-index'), resonantBodyModIndexDisplay: document.getElementById('resonantbody-mod-index-display'),
@@ -268,8 +268,7 @@
             if (event && event.target && typeof event.target.blur === 'function') {
                 event.target.blur();
             }
-            // Ensure the body is focusable for this to work reliably across browsers
-            if (document.body.tabIndex === -1) { 
+            if (document.body.tabIndex === -1) { // Ensure body is focusable
                 setTimeout(() => {
                     document.body.focus();
                 }, 0); 
@@ -317,8 +316,12 @@
             
             console.log(`AUDIO_INIT: PRE-TEST_SOUND. Tone.context.state: ${Tone.context.state}. Synth exists: ${!!synth}. Synth type: ${currentActiveSynthType}`);
             if (synth && Tone.context.state === 'running' && currentActiveSynthType !== 'GrainPlayer') { 
-                synth.triggerAttackRelease("C4", "8n", Tone.now() + 0.1); 
-                console.log("AUDIO_INIT: TEST SOUND (C4) triggered for PolySynth.");
+                if(typeof synth.triggerAttackRelease === 'function'){
+                    synth.triggerAttackRelease("C4", "8n", Tone.now() + 0.1); 
+                    console.log("AUDIO_INIT: TEST SOUND (C4) triggered for PolySynth.");
+                } else {
+                     console.warn("AUDIO_INIT: TEST SOUND NOT TRIGGERED - synth.triggerAttackRelease is not a function.");
+                }
             } else { console.warn("AUDIO_INIT: TEST SOUND NOT TRIGGERED (or Granular mode active or synth not ready)."); }
             
             await initializeMIDI();
@@ -361,7 +364,6 @@
                     synth.dispose(); 
                     synth = null;
                 }
-                // Recreate LFO gain nodes as their connection to synth.detune or filterEnvelope might be invalidated
                 if(lfo1ToDetuneGain) { lfo1ToDetuneGain.dispose(); lfo1ToDetuneGain = new Tone.Multiply(0); }
                 if(lfo1ToFilterFreqGain) { lfo1ToFilterFreqGain.dispose(); lfo1ToFilterFreqGain = new Tone.Multiply(0); }
 
@@ -375,10 +377,9 @@
                     } else {
                         dom.midiLearnStatus.textContent = "Load WAV for Granular";
                         console.warn("UPDATE_OSC_TYPE: GrainPlayer created, but needs a buffer. Load a WAV file.");
-                        // synth remains a GrainPlayer instance, but synth.loaded will be false.
                     }
                 } else { 
-                    currentActiveSynthType = 'MonoSynth'; // Ensure this is correct before creating PolySynth
+                    currentActiveSynthType = 'MonoSynth'; 
                     synth = new Tone.PolySynth(Tone.MonoSynth); 
                     console.log("UPDATE_OSC_TYPE: New PolySynth(MonoSynth) created.");
                 }
@@ -389,12 +390,10 @@
             }
             
             if (synth) { 
-                 applyCurrentOscillatorSpecificSettings(newSelectedOscType); // Apply settings for new/existing synth
-                 applyAudioChain(); // Rebuild the audio chain with the potentially new synth
-                 updateLFO1Connections(); // Re-establish LFO connections
+                 applyCurrentOscillatorSpecificSettings(newSelectedOscType);
+                 applyAudioChain(); 
+                 updateLFO1Connections();
             } else if (newActiveSynthType === 'GrainPlayer' && !grainPlayerBuffer) {
-                // If granular is selected and no buffer, synth will be null.
-                // We still might want to apply the audio chain with synth as null to ensure effects are disconnected from any old synth.
                 applyAudioChain(); 
             }
         }
@@ -429,8 +428,8 @@
                 catch(e) { console.error("APPLY_OSC_SETTINGS_ERROR: Failed to set options for MonoSynth based PolySynth", selectedOscType, settingsForSynthSet, e); }
             } else if (currentActiveSynthType === 'GrainPlayer' && selectedOscType === 'granular' && synth && synth.loaded) {
                 synth.loop = dom.granularLoop.checked;
-                synth.loopStart = parseFloat(dom.granularLoopStart.value); // Already normalized 0-1 from slider
-                synth.loopEnd = parseFloat(dom.granularLoopEnd.value);   // Already normalized 0-1 from slider
+                synth.loopStart = parseFloat(dom.granularLoopStart.value) * synth.buffer.duration;
+                synth.loopEnd = parseFloat(dom.granularLoopEnd.value) * synth.buffer.duration;
                 synth.reverse = dom.granularReverse.checked;
                 synth.grainSize = parseFloat(dom.granularGrainSize.value);
                 synth.overlap = parseFloat(dom.granularOverlap.value);
@@ -464,15 +463,14 @@
             currentNode.toDestination(); 
             console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); 
         }
-        function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); if(currentActiveSynthType === 'MonoSynth' && synth.detune) lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (currentActiveSynthType === 'MonoSynth' && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': if(currentActiveSynthType === 'MonoSynth' && synth.detune) {lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune);} else if (currentActiveSynthType === 'GrainPlayer' && typeof synth.detune === 'number') { /* LFO to GrainPlayer detune needs manual updates */ } else { console.log("LFO to Pitch: Not applicable or detune not a Signal.");} break; case 'filterCutoff': if (currentActiveSynthType === 'MonoSynth' && dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); } else { console.log("LFO to Filter: Not applicable on current synth.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
+        function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); if(synth && synth.detune && (synth instanceof Tone.PolySynth)) lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (synth && (synth instanceof Tone.PolySynth) && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': if(synth && synth.detune && (synth instanceof Tone.PolySynth)) {lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune);} else { console.log("LFO to Pitch: Not applicable or detune not a Signal.");} break; case 'filterCutoff': if (synth && (synth instanceof Tone.PolySynth) && dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); } else { console.log("LFO to Filter: Not applicable on current synth.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
         function createOnScreenKeyboard() { /* ... (same) ... */ dom.keyboard.innerHTML = ''; let currentWhiteKeyOffset = 0; const whiteKeyWidth = 38; const blackKeyWidth = 26; for (let oct = 0; oct < 2; oct++) { notesLayout.forEach((noteLayout) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${noteLayout.freqName}${currentKeyOctave}`; keyElement.textContent = noteLayout.name; if (noteLayout.type === 'white') { keyElement.classList.add('white-key'); keyElement.style.left = `${currentWhiteKeyOffset}px`; dom.keyboard.appendChild(keyElement); currentWhiteKeyOffset += whiteKeyWidth; } else { keyElement.classList.add('black-key'); keyElement.style.left = `${currentWhiteKeyOffset - (whiteKeyWidth/2)}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } }
         function updateKeyVisualState(fullNoteName, isActive) { /* ... (same) ... */ const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.fullNote === fullNoteName) { key.classList.toggle('active', isActive); } }); }
         function playNote(fullNoteName, velocity = 0.75) { 
-            if (!synth || (synth.disposed && !(synth instanceof Tone.GrainPlayer && synth.loaded === false) ) || Tone.context.state !== 'running') { // Allow synth to be GrainPlayer not yet loaded
+            if (!synth || (synth.disposed && !(synth instanceof Tone.GrainPlayer && synth.loaded === false) ) || Tone.context.state !== 'running') { 
                 console.warn("PlayNote: Synth not ready, disposed, or audio context not running. Synth:", synth, "Context state:", Tone.context.state);
                 return;
             }
-            console.log(`PLAY_NOTE_DEBUG: currentActiveSynthType = ${currentActiveSynthType}, synth is ${synth ? synth.constructor.name : 'null'}, synth.loaded (if GrainPlayer): ${synth instanceof Tone.GrainPlayer ? synth.loaded : 'N/A'}`);
             try { 
                 if (synth instanceof Tone.GrainPlayer) { 
                     if (synth.loaded) { 
@@ -500,7 +498,6 @@
                         synth.start(Tone.now(), offset, duration); 
                     } else { console.warn("PlayNote (GrainPlayer): Buffer not loaded. Cannot play."); return; }
                 } else if (synth instanceof Tone.PolySynth) { 
-                    console.log("PLAYNOTE_DEBUG: Attempting PolySynth.triggerAttack. Synth object:", synth, "Is triggerAttack a function?", typeof synth.triggerAttack);
                     if (typeof synth.triggerAttack === 'function') {
                          synth.triggerAttack(fullNoteName, Tone.now(), velocity); 
                     } else { console.error("PLAYNOTE_FATAL: synth.triggerAttack is NOT a function just before call, though synth IS a PolySynth instance.", synth); }
@@ -516,7 +513,6 @@
             if (!synth || synth.disposed || Tone.context.state !== 'running') { 
                 console.warn("ReleaseNote: Synth not ready or disposed."); return; 
             } 
-            console.log(`RELEASE_NOTE_DEBUG: currentActiveSynthType = ${currentActiveSynthType}, synth is ${synth.constructor.name}`);
             try { 
                  if (synth instanceof Tone.GrainPlayer) {
                     if (synth.loaded && typeof synth.stop === 'function') synth.stop(Tone.now() + 0.05); 
@@ -549,10 +545,10 @@
         // --- UI Control Event Listeners ---
         dom.startAudioButton.addEventListener('click', async (e) => { releaseAndRefocus(e); dom.audioContextMessageOverlay.classList.remove('visible'); const success = await initializeAudio(); if(success) console.log("Audio init OK from Start."); else console.error("Audio init FAILED from Start."); });
         dom.midiLearnButton.addEventListener('click', (e) => { toggleGlobalMidiLearnMode(); releaseAndRefocus(e); });
-        Object.keys(paramDefinitions).forEach(paramKey => { const definition = paramDefinitions[paramKey]; const element = dom[definition.elementId]; if (element) { const eventTypeForLearn = (definition.type === 'range' || definition.type === 'file') ? 'mousedown' : 'focus'; element.addEventListener(eventTypeForLearn, (e) => { if (isGlobalMidiLearnActive && !paramKeyToLearn) { setupMidiLearnForElement(paramKey); } /* Do not blur here as it might prevent the control interaction itself */}); element.addEventListener('change', (e) => releaseAndRefocus(e)); if (definition.type === 'range') {element.addEventListener('input', (e) => { /* Update display only, actual audio change handled by 'change' or dedicated function */ updateSliderDisplay(e.target, dom[definition.elementId + 'Display'] || {}, paramDefinitions[paramKey].unit || '', paramDefinitions[paramKey].decimals === 0 ? 0 : (paramDefinitions[paramKey].decimals || 1)); /* No blur here, allow continuous sliding */ }); element.addEventListener('mouseup', (e) => releaseAndRefocus(e)); element.addEventListener('touchend', (e) => releaseAndRefocus(e), {passive: true});}} else { console.warn(`MIDI Learn Setup: Element ID '${definition.elementId}' for param '${paramKey}' not found.`); }});
+        Object.keys(paramDefinitions).forEach(paramKey => { const definition = paramDefinitions[paramKey]; const element = dom[definition.elementId]; if (element) { const eventTypeForLearn = (definition.type === 'range' || definition.type === 'file') ? 'mousedown' : 'focus'; element.addEventListener(eventTypeForLearn, (e) => { if (isGlobalMidiLearnActive && !paramKeyToLearn) { setupMidiLearnForElement(paramKey); } /* Do not blur inside this learn setup */ }); element.addEventListener('change', (e) => releaseAndRefocus(e)); if (definition.type === 'range') { element.addEventListener('mouseup', (e) => releaseAndRefocus(e)); element.addEventListener('touchend', (e) => releaseAndRefocus(e), {passive: true});}} else { console.warn(`MIDI Learn Setup: Element ID '${definition.elementId}' for param '${paramKey}' not found.`); }});
 
         dom.oscType.addEventListener('change', (e) => { updateOscillatorType(); releaseAndRefocus(e); });
-        const oscParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); releaseAndRefocus(e); };
+        const oscParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); releaseAndRefocus(e); }; //This handler will blur
         dom.pwmSpeed.addEventListener('input', (e) => { updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); oscParamHandler(e); });
         dom.fmHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); oscParamHandler(e);});
         dom.fmModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.fmModIndex, dom.fmModIndexDisplay, '', 0); oscParamHandler(e);});
@@ -565,14 +561,15 @@
         
         // Granular controls 
         dom.granularFileInput.addEventListener('change', (event) => { const file = event.target.files[0]; if (file && file.type === "audio/wav") { const reader = new FileReader(); reader.onload = (e_reader) => { Tone.Buffer.fromUrl(e_reader.target.result).then(buffer => { grainPlayerBuffer = buffer; if (dom.oscType.value === 'granular') { updateOscillatorType(); } dom.midiLearnStatus.textContent = `Loaded: ${file.name.substring(0,20)}...`; }).catch(err => { console.error("Error loading WAV into Tone.Buffer:", err); dom.midiLearnStatus.textContent = "Error loading WAV."; }); }; reader.readAsDataURL(file); } else if (file) { dom.midiLearnStatus.textContent = "Please select a .wav file."; console.warn("GRANULAR: Non-WAV file selected."); } releaseAndRefocus(event); });
-        dom.granularLoop.addEventListener('change', (e) => { if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.loop = e.target.checked; applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
-        dom.granularLoopStart.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopStart, dom.granularLoopStartDisplay, '', 2); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.loopStart = parseFloat(e.target.value) * synth.buffer.duration; applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
-        dom.granularLoopEnd.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopEnd, dom.granularLoopEndDisplay, '', 2); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.loopEnd = parseFloat(e.target.value) * synth.buffer.duration; applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
-        dom.granularReverse.addEventListener('change', (e) => { if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.reverse = e.target.checked; applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
-        dom.granularGrainSize.addEventListener('input', (e) => { updateSliderDisplay(dom.granularGrainSize, dom.granularGrainSizeDisplay, 's', 3); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.grainSize = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
-        dom.granularOverlap.addEventListener('input', (e) => { updateSliderDisplay(dom.granularOverlap, dom.granularOverlapDisplay, 's', 3); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.overlap = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
-        dom.granularDetune.addEventListener('input', (e) => { updateSliderDisplay(dom.granularDetune, dom.granularDetuneDisplay, ' cents', 0); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.detune = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
-        dom.granularPlaybackRate.addEventListener('input', (e) => { updateSliderDisplay(dom.granularPlaybackRate, dom.granularPlaybackRateDisplay, 'x', 2); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.playbackRate = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
+        const granularParamHandler = (e) => { if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) applyCurrentOscillatorSpecificSettings('granular'); releaseAndRefocus(e); };
+        dom.granularLoop.addEventListener('change', granularParamHandler);
+        dom.granularLoopStart.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopStart, dom.granularLoopStartDisplay, '', 2); granularParamHandler(e); });
+        dom.granularLoopEnd.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopEnd, dom.granularLoopEndDisplay, '', 2); granularParamHandler(e); });
+        dom.granularReverse.addEventListener('change', granularParamHandler);
+        dom.granularGrainSize.addEventListener('input', (e) => { updateSliderDisplay(dom.granularGrainSize, dom.granularGrainSizeDisplay, 's', 3); granularParamHandler(e); });
+        dom.granularOverlap.addEventListener('input', (e) => { updateSliderDisplay(dom.granularOverlap, dom.granularOverlapDisplay, 's', 3); granularParamHandler(e); });
+        dom.granularDetune.addEventListener('input', (e) => { updateSliderDisplay(dom.granularDetune, dom.granularDetuneDisplay, ' cents', 0); granularParamHandler(e); });
+        dom.granularPlaybackRate.addEventListener('input', (e) => { updateSliderDisplay(dom.granularPlaybackRate, dom.granularPlaybackRateDisplay, 'x', 2); granularParamHandler(e); });
 
 
         function updateVolumeAndEnvelopes(event) { applyCurrentOscillatorSpecificSettings(dom.oscType.value); if(event && event.target) releaseAndRefocus(event); } 
@@ -582,8 +579,8 @@
         dom.ampEnvSustain.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvSustain, dom.ampEnvSustainDisplay, '', 2); updateVolumeAndEnvelopes(e); });
         dom.ampEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvRelease, dom.ampEnvReleaseDisplay, 's', 2); updateVolumeAndEnvelopes(e); });
 
-        dom.filterType.addEventListener('change', (e) => {applyCurrentOscillatorSpecificSettings(dom.oscType.value); releaseAndRefocus(e); });
         const filterParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); releaseAndRefocus(e); };
+        dom.filterType.addEventListener('change', (e) => {filterParamHandler(e); /*applyAudioChain();*/ }); // applyAudioChain not needed here since filter is per voice
         dom.filterCutoff.addEventListener('input', (e) => { updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); filterParamHandler(e); });
         dom.filterResonance.addEventListener('input', (e) => { updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q'); filterParamHandler(e); });
         dom.filterEnvAttack.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvAttack, dom.filterEnvAttackDisplay, 's', 3); filterParamHandler(e); });
