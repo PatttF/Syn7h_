@@ -77,7 +77,7 @@
                     <option value="supersaw">Supersaw</option>
                     <option value="resonantbody">Resonant Body</option>
                     <option value="formantvoice">Formant Voice</option>
-                    <option value="granular">Granular (Monophonic)</option>
+                    <option value="granular">Granular (Monophonic)</option> 
                 </select>
                 <div id="pwm-controls" class="hidden">
                     <label for="pwm-speed">PWM Speed</label><input type="range" id="pwm-speed" min="0.1" max="20" value="5" step="0.1"><span id="pwm-speed-display" class="value-display">5 Hz</span>
@@ -100,15 +100,18 @@
                 </div>
                 <div id="granular-controls" class="hidden">
                     <label for="granular-file-input">Load WAV File</label>
-                    <input type="file" id="granular-file-input" accept=".wav">
-                    <div class="flex items-center justify-center my-2">
-                        <input type="checkbox" id="granular-loop" class="mr-2"><label for="granular-loop" class="text-sm">Loop</label>
+                    <input type="file" id="granular-file-input" accept=".wav" class="text-xs">
+                    <div class="flex items-center justify-around my-1"> 
+                        <label for="granular-loop" class="text-sm mr-1">Loop</label><input type="checkbox" id="granular-loop" class="mr-2">
+                        <label for="granular-reverse" class="text-sm mr-1">Reverse Grains</label><input type="checkbox" id="granular-reverse">
                     </div>
+                    <label for="granular-loop-start">Loop Start</label><input type="range" id="granular-loop-start" min="0" max="1" value="0" step="0.01"><span id="granular-loop-start-display" class="value-display">0.00</span>
+                    <label for="granular-loop-end">Loop End</label><input type="range" id="granular-loop-end" min="0" max="1" value="1" step="0.01"><span id="granular-loop-end-display" class="value-display">1.00</span>
                     <label for="granular-grain-size">Grain Size</label><input type="range" id="granular-grain-size" min="0.01" max="0.5" value="0.1" step="0.005"><span id="granular-grain-size-display" class="value-display">0.1 s</span>
                     <label for="granular-overlap">Overlap</label><input type="range" id="granular-overlap" min="-0.1" max="0.4" value="0.05" step="0.005"><span id="granular-overlap-display" class="value-display">0.05 s</span>
                     <label for="granular-detune">Detune (Spray)</label><input type="range" id="granular-detune" min="0" max="1200" value="0" step="10"><span id="granular-detune-display" class="value-display">0 cents</span>
                     <label for="granular-playback-rate">Playback Rate</label><input type="range" id="granular-playback-rate" min="0.1" max="4" value="1" step="0.05"><span id="granular-playback-rate-display" class="value-display">1.0x</span>
-                    <p class="text-xs text-center mt-1 text-gray-400">Amp Env does not apply to Granular mode.</p>
+                    <p class="text-xs text-center mt-1 text-gray-400">Amp Env & Filter Env do not apply to Granular mode.</p>
                 </div>
                 <label for="octave-display-label">Starting Octave: <span id="octave-display">4</span></label>
                 <div class="button-group mt-1">
@@ -142,6 +145,7 @@
             <!-- EFFECTS -->
             <div class="control-group"><span class="group-title">Distortion</span><label for="dist-enable">Enable</label><input type="checkbox" id="dist-enable"><label for="dist-amount">Amount</label><input type="range" id="dist-amount" min="0" max="1" value="0.0" step="0.01"><span id="dist-amount-display" class="value-display">0.0</span><label for="dist-wet">Wet</label><input type="range" id="dist-wet" min="0" max="1" value="0.0" step="0.01"><span id="dist-wet-display" class="value-display">0.0</span></div>
             <div class="control-group"><span class="group-title">BitCrusher</span><label for="crusher-enable">Enable</label><input type="checkbox" id="crusher-enable"><label for="crusher-bits">Bits</label><input type="range" id="crusher-bits" min="1" max="16" value="8" step="1"><span id="crusher-bits-display" class="value-display">8 bits</span><label for="crusher-wet">Wet</label><input type="range" id="crusher-wet" min="0" max="1" value="0.0" step="0.01"><span id="crusher-wet-display" class="value-display">0.0</span></div>
+            <div class="control-group"><span class="group-title">Ring Modulator</span><label for="ringmod-enable">Enable</label><input type="checkbox" id="ringmod-enable"><label for="ringmod-frequency">Mod Freq</label><input type="range" id="ringmod-frequency" min="1" max="2000" value="100" step="1"><span id="ringmod-frequency-display" class="value-display">100 Hz</span><label for="ringmod-wet">Wet</label><input type="range" id="ringmod-wet" min="0" max="1" value="0.0" step="0.01"><span id="ringmod-wet-display" class="value-display">0.0</span></div>
             <div class="control-group"><span class="group-title">Chorus</span><label for="chorus-enable">Enable</label><input type="checkbox" id="chorus-enable"><label for="chorus-rate">Rate</label><input type="range" id="chorus-rate" min="0.1" max="8" value="1.5" step="0.1"><span id="chorus-rate-display" class="value-display">1.5 Hz</span><label for="chorus-depth">Depth</label><input type="range" id="chorus-depth" min="0" max="1" value="0.7" step="0.01"><span id="chorus-depth-display" class="value-display">0.7</span><label for="chorus-feedback">Feedback</label><input type="range" id="chorus-feedback" min="0" max="0.9" value="0.2" step="0.01"><span id="chorus-feedback-display" class="value-display">0.2</span><label for="chorus-wet">Wet</label><input type="range" id="chorus-wet" min="0" max="1" value="0.0" step="0.01"><span id="chorus-wet-display" class="value-display">0.0</span></div>
             <div class="control-group"><span class="group-title">Phaser</span><label for="phaser-enable">Enable</label><input type="checkbox" id="phaser-enable"><label for="phaser-frequency">LFO Freq</label><input type="range" id="phaser-frequency" min="0.1" max="10" value="0.5" step="0.1"><span id="phaser-frequency-display" class="value-display">0.5 Hz</span><label for="phaser-octaves">Octaves</label><input type="range" id="phaser-octaves" min="1" max="8" value="3" step="0.1"><span id="phaser-octaves-display" class="value-display">3</span><label for="phaser-base-freq">Base Freq</label><input type="range" id="phaser-base-freq" min="100" max="1500" value="350" step="10"><span id="phaser-base-freq-display" class="value-display">350 Hz</span><label for="phaser-wet">Wet</label><input type="range" id="phaser-wet" min="0" max="1" value="0.0" step="0.01"><span id="phaser-wet-display" class="value-display">0.0</span></div>
             <div class="control-group"><span class="group-title">Delay</span><label for="delay-enable">Enable</label><input type="checkbox" id="delay-enable"><label for="delay-time">Time</label><input type="range" id="delay-time" min="0.01" max="1" value="0.25" step="0.01"><span id="delay-time-display" class="value-display">0.25 s</span><label for="delay-feedback">Feedback</label><input type="range" id="delay-feedback" min="0" max="0.9" value="0.3" step="0.01"><span id="delay-feedback-display" class="value-display">0.3</span><label for="delay-wet">Wet</label><input type="range" id="delay-wet" min="0" max="1" value="0.0" step="0.01"><span id="delay-wet-display" class="value-display">0.0</span></div>
@@ -159,21 +163,27 @@
 
     <script>
         // --- Global Variables & Tone.js Objects ---
-        let synth; // Can be PolySynth or GrainPlayer
+        let synth; 
         let startingOctave = 4; 
         let lfo1, lfo1ToDetuneGain, lfo1ToFilterFreqGain;
-        let tremoloEffect, distortionEffect, bitCrusherEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect;
-        let currentActiveSynthType = 'MonoSynth'; // 'MonoSynth' or 'GrainPlayer'
+        let tremoloEffect, distortionEffect, bitCrusherEffect, ringModulatorEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect;
+        let currentActiveSynthType = 'MonoSynth'; 
         let grainPlayerBuffer = null;
+        let isGlobalMidiLearnActive = false;
+        let paramKeyToLearn = null; 
+        let midiMappings = {}; 
 
 
         // --- DOM Element Grabbing (Centralized) ---
-        const dom = {
+        const dom = { /* ... (all DOM elements) ... */
             oscType: document.getElementById('osc-type'), pwmControls: document.getElementById('pwm-controls'), pwmSpeed: document.getElementById('pwm-speed'), pwmSpeedDisplay: document.getElementById('pwm-speed-display'), fmControls: document.getElementById('fm-controls'), fmHarmonicity: document.getElementById('fm-harmonicity'), fmHarmonicityDisplay: document.getElementById('fm-harmonicity-display'), fmModIndex: document.getElementById('fm-mod-index'), fmModIndexDisplay: document.getElementById('fm-mod-index-display'), 
             supersawControls: document.getElementById('supersaw-controls'), supersawCount: document.getElementById('supersaw-count'), supersawCountDisplay: document.getElementById('supersaw-count-display'), supersawSpread: document.getElementById('supersaw-spread'), supersawSpreadDisplay: document.getElementById('supersaw-spread-display'),
             resonantBodyControls: document.getElementById('resonantbody-controls'), resonantBodyHarmonicity: document.getElementById('resonantbody-harmonicity'), resonantBodyHarmonicityDisplay: document.getElementById('resonantbody-harmonicity-display'), resonantBodyModIndex: document.getElementById('resonantbody-mod-index'), resonantBodyModIndexDisplay: document.getElementById('resonantbody-mod-index-display'),
             formantVoiceControls: document.getElementById('formantvoice-controls'), formantVoiceHarmonicity: document.getElementById('formantvoice-harmonicity'), formantVoiceHarmonicityDisplay: document.getElementById('formantvoice-harmonicity-display'), formantVoiceModIndex: document.getElementById('formantvoice-mod-index'), formantVoiceModIndexDisplay: document.getElementById('formantvoice-mod-index-display'),
             granularControls: document.getElementById('granular-controls'), granularFileInput: document.getElementById('granular-file-input'), granularLoop: document.getElementById('granular-loop'), granularGrainSize: document.getElementById('granular-grain-size'), granularGrainSizeDisplay: document.getElementById('granular-grain-size-display'), granularOverlap: document.getElementById('granular-overlap'), granularOverlapDisplay: document.getElementById('granular-overlap-display'), granularDetune: document.getElementById('granular-detune'), granularDetuneDisplay: document.getElementById('granular-detune-display'), granularPlaybackRate: document.getElementById('granular-playback-rate'), granularPlaybackRateDisplay: document.getElementById('granular-playback-rate-display'),
+            granularLoopStart: document.getElementById('granular-loop-start'), granularLoopStartDisplay: document.getElementById('granular-loop-start-display'),
+            granularLoopEnd: document.getElementById('granular-loop-end'), granularLoopEndDisplay: document.getElementById('granular-loop-end-display'),
+            granularReverse: document.getElementById('granular-reverse'),
             octaveDisplay: document.getElementById('octave-display'), 
             volume: document.getElementById('volume'), volumeDisplay: document.getElementById('volume-display'), 
             ampEnvAttack: document.getElementById('amp-env-attack'), ampEnvAttackDisplay: document.getElementById('amp-env-attack-display'), ampEnvDecay: document.getElementById('amp-env-decay'), ampEnvDecayDisplay: document.getElementById('amp-env-decay-display'), ampEnvSustain: document.getElementById('amp-env-sustain'), ampEnvSustainDisplay: document.getElementById('amp-env-sustain-display'), ampEnvRelease: document.getElementById('amp-env-release'), ampEnvReleaseDisplay: document.getElementById('amp-env-release-display'),
@@ -184,6 +194,7 @@
             lfo1PwmFreqControls: document.getElementById('lfo1-pwm-freq-controls'), lfo1PwmFreq: document.getElementById('lfo1-pwm-freq'), lfo1PwmFreqDisplay: document.getElementById('lfo1-pwm-freq-display'),
             distEnable: document.getElementById('dist-enable'), distAmount: document.getElementById('dist-amount'), distAmountDisplay: document.getElementById('dist-amount-display'), distWet: document.getElementById('dist-wet'), distWetDisplay: document.getElementById('dist-wet-display'), 
             crusherEnable: document.getElementById('crusher-enable'), crusherBits: document.getElementById('crusher-bits'), crusherBitsDisplay: document.getElementById('crusher-bits-display'), crusherWet: document.getElementById('crusher-wet'), crusherWetDisplay: document.getElementById('crusher-wet-display'),
+            ringModEnable: document.getElementById('ringmod-enable'), ringModFrequency: document.getElementById('ringmod-frequency'), ringModFrequencyDisplay: document.getElementById('ringmod-frequency-display'), ringModWet: document.getElementById('ringmod-wet'), ringModWetDisplay: document.getElementById('ringmod-wet-display'),
             chorusEnable: document.getElementById('chorus-enable'), chorusRate: document.getElementById('chorus-rate'), chorusRateDisplay: document.getElementById('chorus-rate-display'), chorusDepth: document.getElementById('chorus-depth'), chorusDepthDisplay: document.getElementById('chorus-depth-display'), chorusFeedback: document.getElementById('chorus-feedback'), chorusFeedbackDisplay: document.getElementById('chorus-feedback-display'), chorusWet: document.getElementById('chorus-wet'), chorusWetDisplay: document.getElementById('chorus-wet-display'), 
             phaserEnable: document.getElementById('phaser-enable'), phaserFrequency: document.getElementById('phaser-frequency'), phaserFrequencyDisplay: document.getElementById('phaser-frequency-display'), phaserOctaves: document.getElementById('phaser-octaves'), phaserOctavesDisplay: document.getElementById('phaser-octaves-display'), phaserBaseFreq: document.getElementById('phaser-base-freq'), phaserBaseFreqDisplay: document.getElementById('phaser-base-freq-display'), phaserWet: document.getElementById('phaser-wet'), phaserWetDisplay: document.getElementById('phaser-wet-display'),
             delayEnable: document.getElementById('delay-enable'), delayTime: document.getElementById('delay-time'), delayTimeDisplay: document.getElementById('delay-time-display'), delayFeedback: document.getElementById('delay-feedback'), delayFeedbackDisplay: document.getElementById('delay-feedback-display'), delayWet: document.getElementById('delay-wet'), delayWetDisplay: document.getElementById('delay-wet-display'), 
@@ -195,8 +206,7 @@
         
         for (const key in dom) { if (dom[key] === null) { console.error(`CRITICAL DOM ERROR: Element for dom.${key} not found!`); }}
 
-        // Define all controllable parameters for MIDI Learn
-        const paramDefinitions = { /* ... (Existing definitions - ADD Granular params here) ... */
+        const paramDefinitions = { /* ... (Updated with granular and ringmod params) ... */
             'oscType': { elementId: 'osc-type', label: 'Osc Type', type: 'select', options: Array.from(dom.oscType.options).map(opt => opt.value), eventToDispatch: 'change' },
             'pwmSpeed': { elementId: 'pwm-speed', label: 'PWM Speed', type: 'range', min: 0.1, max: 20, eventToDispatch: 'input'},
             'fmHarmonicity': { elementId: 'fm-harmonicity', label: 'FM Harm', type: 'range', min: 0.1, max: 10, eventToDispatch: 'input'},
@@ -208,6 +218,9 @@
             'formantVoiceHarmonicity': { elementId: 'formantvoice-harmonicity', label: 'Formant Harm', type: 'range', min: 0.1, max: 5, eventToDispatch: 'input'},
             'formantVoiceModIndex': { elementId: 'formantvoice-mod-index', label: 'Formant Index', type: 'range', min: 1, max: 30, eventToDispatch: 'input'},
             'granularLoop': { elementId: 'granular-loop', label: 'Granular Loop', type: 'checkbox', eventToDispatch: 'change'},
+            'granularLoopStart': { elementId: 'granular-loop-start', label: 'Granular Loop Start', type: 'range', min: 0, max: 1, eventToDispatch: 'input'},
+            'granularLoopEnd': { elementId: 'granular-loop-end', label: 'Granular Loop End', type: 'range', min: 0, max: 1, eventToDispatch: 'input'},
+            'granularReverse': { elementId: 'granular-reverse', label: 'Granular Reverse', type: 'checkbox', eventToDispatch: 'change'},
             'granularGrainSize': { elementId: 'granular-grain-size', label: 'Grain Size', type: 'range', min: 0.01, max: 0.5, eventToDispatch: 'input'},
             'granularOverlap': { elementId: 'granular-overlap', label: 'Grain Overlap', type: 'range', min: -0.1, max: 0.4, eventToDispatch: 'input'},
             'granularDetune': { elementId: 'granular-detune', label: 'Grain Detune', type: 'range', min:0, max:1200, eventToDispatch: 'input'},
@@ -234,6 +247,7 @@
             'lfo1Destination': { elementId: 'lfo1-destination', label: 'LFO1 Dest', type: 'select', options: Array.from(dom.lfo1Destination.options).map(opt => opt.value), eventToDispatch: 'change' },
             'distEnable': { elementId: 'dist-enable', label: 'Distortion Enable', type: 'checkbox', eventToDispatch: 'change'}, 'distAmount': { elementId: 'dist-amount', label: 'Distortion Amt', type: 'range', min:0, max:1, eventToDispatch: 'input'}, 'distWet': { elementId: 'dist-wet', label: 'Distortion Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
             'crusherEnable': { elementId: 'crusher-enable', label: 'BitCrush Enable', type: 'checkbox', eventToDispatch: 'change'}, 'crusherBits': { elementId: 'crusher-bits', label: 'BitCrush Bits', type: 'range', min:1, max:16, eventToDispatch: 'input'}, 'crusherWet': { elementId: 'crusher-wet', label: 'BitCrush Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+            'ringModEnable': { elementId: 'ringmod-enable', label: 'RingMod Enable', type: 'checkbox', eventToDispatch: 'change'}, 'ringModFrequency': { elementId: 'ringmod-frequency', label: 'RingMod Freq', type: 'range', min:1, max:2000, eventToDispatch: 'input'}, 'ringModWet': { elementId: 'ringmod-wet', label: 'RingMod Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
             'chorusEnable': { elementId: 'chorus-enable', label: 'Chorus Enable', type: 'checkbox', eventToDispatch: 'change'}, 'chorusRate': { elementId: 'chorus-rate', label: 'Chorus Rate', type: 'range', min:0.1, max:8, eventToDispatch: 'input'}, 'chorusDepth': { elementId: 'chorus-depth', label: 'Chorus Depth', type: 'range', min:0, max:1, eventToDispatch: 'input'}, 'chorusFeedback': { elementId: 'chorus-feedback', label: 'Chorus Fbk', type: 'range', min:0, max:0.9, eventToDispatch: 'input'}, 'chorusWet': { elementId: 'chorus-wet', label: 'Chorus Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
             'phaserEnable': { elementId: 'phaser-enable', label: 'Phaser Enable', type: 'checkbox', eventToDispatch: 'change'}, 'phaserFrequency': { elementId: 'phaser-frequency', label: 'Phaser Freq', type: 'range', min:0.1, max:10, eventToDispatch: 'input'}, 'phaserOctaves': { elementId: 'phaser-octaves', label: 'Phaser Octs', type: 'range', min:1, max:8, eventToDispatch: 'input'}, 'phaserBaseFreq': { elementId: 'phaser-base-freq', label: 'Phaser Base', type: 'range', min:100, max:1500, eventToDispatch: 'input'}, 'phaserWet': { elementId: 'phaser-wet', label: 'Phaser Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
             'delayEnable': { elementId: 'delay-enable', label: 'Delay Enable', type: 'checkbox', eventToDispatch: 'change'}, 'delayTime': { elementId: 'delay-time', label: 'Delay Time', type: 'range', min:0.01, max:1, eventToDispatch: 'input'}, 'delayFeedback': { elementId: 'delay-feedback', label: 'Delay Fbk', type: 'range', min:0, max:0.9, eventToDispatch: 'input'}, 'delayWet': { elementId: 'delay-wet', label: 'Delay Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
@@ -256,9 +270,9 @@
                 try { await Tone.start(); console.log("AUDIO_INIT: Tone.start() OK. State:", Tone.context.state); }
                 catch (error) { console.error("AUDIO_INIT_ERROR: Tone.start() failed:", error); showMessage(dom.audioContextMessageOverlay, "Error initializing audio.", "Close", () => {}); return false; }
             }
-            if (!synth) { 
+            if (!tremoloEffect) { 
                 try {
-                    console.log("AUDIO_INIT: Creating Tone.js objects...");
+                    console.log("AUDIO_INIT: Creating ALL effect nodes...");
                     lfo1ToDetuneGain = new Tone.Multiply(0); 
                     lfo1ToFilterFreqGain = new Tone.Multiply(0);
                     lfo1 = new Tone.LFO({ frequency: parseFloat(dom.lfo1Rate.value), type: dom.lfo1Wave.value, min: -1, max: 1 });
@@ -266,6 +280,9 @@
                     tremoloEffect = new Tone.Tremolo({ frequency: parseFloat(dom.lfo1Rate.value), type: dom.lfo1Wave.value, depth: 0, spread: 0 });
                     distortionEffect = new Tone.Distortion(parseFloat(dom.distAmount.value));
                     bitCrusherEffect = new Tone.BitCrusher(parseInt(dom.crusherBits.value));
+                    ringModulatorEffect = new Tone.FrequencyShifter(parseFloat(dom.ringModFrequency.value)); 
+                    // For FrequencyShifter to act as a ring modulator, depth isn't a direct param. The effect is achieved by shifting and mixing.
+                    // The 'frequency' param of FrequencyShifter is the modulator frequency.
                     chorusEffect = new Tone.Chorus({ frequency: parseFloat(dom.chorusRate.value), depth: parseFloat(dom.chorusDepth.value), feedback: parseFloat(dom.chorusFeedback.value), delayTime: 3.5, type: "sine" });
                     phaserEffect = new Tone.Phaser({ frequency: parseFloat(dom.phaserFrequency.value), octaves: parseFloat(dom.phaserOctaves.value), baseFrequency: parseFloat(dom.phaserBaseFreq.value) });
                     delayEffect = new Tone.FeedbackDelay({ delayTime: parseFloat(dom.delayTime.value), feedback: parseFloat(dom.delayFeedback.value) });
@@ -275,30 +292,30 @@
 
                     distortionEffect.wet.value = dom.distEnable.checked ? parseFloat(dom.distWet.value) : 0; 
                     bitCrusherEffect.wet.value = dom.crusherEnable.checked ? parseFloat(dom.crusherWet.value) : 0; 
+                    ringModulatorEffect.wet.value = dom.ringModEnable.checked ? parseFloat(dom.ringModWet.value) : 0;
                     chorusEffect.wet.value = dom.chorusEnable.checked ? parseFloat(dom.chorusWet.value) : 0; 
                     phaserEffect.wet.value = dom.phaserEnable.checked ? parseFloat(dom.phaserWet.value) : 0; 
                     delayEffect.wet.value = dom.delayEnable.checked ? parseFloat(dom.delayWet.value) : 0; 
                     pingPongDelayEffect.wet.value = dom.pingpongEnable.checked ? parseFloat(dom.pingpongWet.value) : 0; 
                     reverbEffect.wet.value = dom.reverbEnable.checked ? parseFloat(dom.reverbWet.value) : 0;
 
-                    // Synth will be created by updateOscillatorType based on initial selection
-                    updateOscillatorType(); // This will create the initial synth object
-                    
-                    applyAudioChain(); 
-                    updateLFO1Connections(); 
-
-                    console.log(`AUDIO_INIT: PRE-TEST_SOUND. Tone.context.state: ${Tone.context.state}. Synth exists: ${!!synth}. Synth volume: ${synth ? synth.volume.value : 'N/A'}`);
-                    if (synth && Tone.context.state === 'running' && currentActiveSynthType !== 'GrainPlayer') { // Don't auto-play GrainPlayer
-                        synth.triggerAttackRelease("C4", "8n", Tone.now() + 0.1); 
-                        console.log("AUDIO_INIT: TEST SOUND (C4) triggered for PolySynth.");
-                    } else { console.warn("AUDIO_INIT: TEST SOUND NOT TRIGGERED (or Granular mode active)."); }
-                    await initializeMIDI();
-                    loadMidiMappings();
-                } catch (error) { console.error("AUDIO_INIT_ERROR: Creating nodes failed:", error); showMessage(dom.audioContextMessageOverlay, "Synth creation error.", "Close", () => {}); return false; }
-            } else {  
-                console.log("AUDIO_INIT: Synth exists. Re-applying settings."); 
-                updateOscillatorType(); 
+                } catch (error) { console.error("AUDIO_INIT_ERROR: Creating effect nodes failed:", error); return false; }
             }
+            
+            updateOscillatorType(); 
+            
+            applyAudioChain(); 
+            updateLFO1Connections(); 
+
+            console.log(`AUDIO_INIT: PRE-TEST_SOUND. Tone.context.state: ${Tone.context.state}. Synth exists: ${!!synth}. Synth type: ${currentActiveSynthType}`);
+            if (synth && Tone.context.state === 'running' && currentActiveSynthType !== 'GrainPlayer') { 
+                synth.triggerAttackRelease("C4", "8n", Tone.now() + 0.1); 
+                console.log("AUDIO_INIT: TEST SOUND (C4) triggered for PolySynth.");
+            } else { console.warn("AUDIO_INIT: TEST SOUND NOT TRIGGERED (or Granular mode active)."); }
+            
+            await initializeMIDI();
+            loadMidiMappings();
+            
             console.log("AUDIO_INIT: Initialization finished.");
             return true;
         }
@@ -306,10 +323,9 @@
         function updateOscillatorType() {
             if (!Tone.context || Tone.context.state !== 'running') { console.warn("UPDATE_OSC_TYPE_WARN: AudioContext not running."); return; }
             const newSelectedOscType = dom.oscType.value;
-            let newActiveSynthType = 'MonoSynth'; // Default for most types
-            console.log("UPDATE_OSC_TYPE: Selected type:", newSelectedOscType);
+            let newActiveSynthType = (newSelectedOscType === 'granular') ? 'GrainPlayer' : 'MonoSynth';
+            console.log("UPDATE_OSC_TYPE: Selected type:", newSelectedOscType, "Required synth type:", newActiveSynthType);
 
-            // Hide all specific osc controls initially
             dom.pwmControls.classList.add('hidden'); dom.fmControls.classList.add('hidden');
             dom.supersawControls.classList.add('hidden'); 
             dom.resonantBodyControls.classList.add('hidden'); 
@@ -317,23 +333,18 @@
             dom.granularControls.classList.add('hidden');
 
 
-            if (newSelectedOscType === 'granular') {
-                newActiveSynthType = 'GrainPlayer';
-                dom.granularControls.classList.remove('hidden');
-            } else {
-                // Show relevant controls for MonoSynth-based oscillators
-                switch (newSelectedOscType) {
-                    case 'pwm': dom.pwmControls.classList.remove('hidden'); break;
-                    case 'fmsine': dom.fmControls.classList.remove('hidden'); break;
-                    case 'supersaw': dom.supersawControls.classList.remove('hidden'); break; 
-                    case 'resonantbody': dom.resonantBodyControls.classList.remove('hidden'); break;
-                    case 'formantvoice': dom.formantVoiceControls.classList.remove('hidden'); break;
-                }
+            switch (newSelectedOscType) {
+                case 'pwm': dom.pwmControls.classList.remove('hidden'); break;
+                case 'fmsine': dom.fmControls.classList.remove('hidden'); break;
+                case 'supersaw': dom.supersawControls.classList.remove('hidden'); break; 
+                case 'resonantbody': dom.resonantBodyControls.classList.remove('hidden'); break;
+                case 'formantvoice': dom.formantVoiceControls.classList.remove('hidden'); break;
+                case 'granular': dom.granularControls.classList.remove('hidden'); break;
             }
-
-            if (currentActiveSynthType !== newActiveSynthType || !synth) { // Recreate synth if type changes OR if it's the first init
+            
+            if (currentActiveSynthType !== newActiveSynthType || !synth) {
                 console.log("UPDATE_OSC_TYPE: Synth type change needed or first init. Old active type:", currentActiveSynthType, "New active type:", newActiveSynthType);
-                const oldVolume = synth ? synth.volume.value : parseFloat(dom.volume.value); 
+                const oldVolume = synth && typeof synth.volume !== 'undefined' && typeof synth.volume.value !== 'undefined' ? synth.volume.value : parseFloat(dom.volume.value); 
 
                 if (synth) {
                     console.log("UPDATE_OSC_TYPE: Disposing old synth.");
@@ -343,45 +354,42 @@
                     synth = null;
                 }
                 if(lfo1ToDetuneGain) { lfo1ToDetuneGain.dispose(); lfo1ToDetuneGain = new Tone.Multiply(0); }
-                if(lfo1ToFilterFreqGain && currentActiveSynthType === 'MonoSynth') { // Only dispose if it was connected to MonoSynth's filter envelope
-                    lfo1ToFilterFreqGain.dispose(); lfo1ToFilterFreqGain = new Tone.Multiply(0);
-                }
+                if(lfo1ToFilterFreqGain) { lfo1ToFilterFreqGain.dispose(); lfo1ToFilterFreqGain = new Tone.Multiply(0); }
 
 
                 if (newActiveSynthType === 'GrainPlayer') {
                     if (grainPlayerBuffer && grainPlayerBuffer.loaded) {
-                        synth = new Tone.GrainPlayer(grainPlayerBuffer).toDestination(); // Connect directly for now, will be rerouted
+                        synth = new Tone.GrainPlayer(grainPlayerBuffer);
                         console.log("UPDATE_OSC_TYPE: New GrainPlayer created.");
                     } else {
-                        synth = null; // Cannot create GrainPlayer without a buffer
+                        synth = null; 
                         dom.midiLearnStatus.textContent = "Load WAV for Granular";
                         console.warn("UPDATE_OSC_TYPE: GrainPlayer needs a buffer. Load a WAV file.");
                     }
-                } else { // MonoSynth based
-                    currentPolySynthVoiceType = Tone.MonoSynth; // Explicitly set
-                    synth = new Tone.PolySynth(currentPolySynthVoiceType); 
-                    console.log("UPDATE_OSC_TYPE: New PolySynth created with voice:", currentPolySynthVoiceType.name);
+                } else { 
+                    currentActiveSynthType = 'MonoSynth'; 
+                    synth = new Tone.PolySynth(Tone.MonoSynth); 
+                    console.log("UPDATE_OSC_TYPE: New PolySynth(MonoSynth) created.");
                 }
-                currentActiveSynthType = newActiveSynthType;
                 
                 if (synth) {
-                    synth.volume.value = oldVolume; // Apply master volume to the new synth object
+                    synth.volume.value = oldVolume;
                 }
             }
             
-            if (synth) {
+            if (synth) { 
                  applyCurrentOscillatorSpecificSettings(newSelectedOscType);
-                 applyAudioChain(); // Always rebuild chain as synth object or its connections might have changed
+                 applyAudioChain(); 
                  updateLFO1Connections();
             }
         }
 
 
         function applyCurrentOscillatorSpecificSettings(selectedOscType) {
-            if (!synth) { console.warn("APPLY_OSC_SETTINGS_WARN: Synth not ready."); return; }
+            if (!synth) { console.warn("APPLY_OSC_SETTINGS_WARN: Synth not ready for type:", selectedOscType); return; }
             console.log("APPLY_OSC_SETTINGS: Applying for type:", selectedOscType, "to current synth type:", currentActiveSynthType);
 
-            if (currentActiveSynthType === 'MonoSynth') {
+            if (currentActiveSynthType === 'MonoSynth') { 
                 let settingsForSynthSet = {
                     volume: parseFloat(dom.volume.value), 
                     envelope: { 
@@ -400,53 +408,53 @@
                 } else { settingsForSynthSet.filter = { type: 'lowpass', Q: 0.1, frequency: 20000, rolloff: -12 }; settingsForSynthSet.filterEnvelope = { attack:0.005, decay:0.01, sustain:1, release:0.01, baseFrequency: 20000, octaves: 0}; }
 
                 let monoSynthOscSettings = {};
-                switch (selectedOscType) { /* ... (osc settings switch) ... */ case 'sine': case 'square': case 'triangle': case 'sawtooth': monoSynthOscSettings = { type: selectedOscType }; break; case 'pwm': monoSynthOscSettings = { type: 'pwm', modulationFrequency: parseFloat(dom.pwmSpeed.value) }; break; case 'fmsine': monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.fmHarmonicity.value), modulationIndex: parseFloat(dom.fmModIndex.value), modulationType: 'sine' }; break; case 'amsine': monoSynthOscSettings = { type: 'amsine', harmonicity: 1, modulationType: 'square' }; break; case 'supersaw': monoSynthOscSettings = { type: 'fatsawtooth', count: parseInt(dom.supersawCount.value), spread: parseFloat(dom.supersawSpread.value) }; break; case 'resonantbody': monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.resonantBodyHarmonicity.value), modulationIndex: parseFloat(dom.resonantBodyModIndex.value), modulationType: 'sine' }; break; case 'formantvoice': monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.formantVoiceHarmonicity.value), modulationIndex: parseFloat(dom.formantVoiceModIndex.value), modulationType: 'triangle' }; break; default: monoSynthOscSettings = { type: 'sine' }; }
+                switch (selectedOscType) { /* ... (other osc settings switch) ... */ case 'sine': case 'square': case 'triangle': case 'sawtooth': monoSynthOscSettings = { type: selectedOscType }; break; case 'pwm': monoSynthOscSettings = { type: 'pwm', modulationFrequency: parseFloat(dom.pwmSpeed.value) }; break; case 'fmsine': monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.fmHarmonicity.value), modulationIndex: parseFloat(dom.fmModIndex.value), modulationType: 'sine' }; break; case 'amsine': monoSynthOscSettings = { type: 'amsine', harmonicity: 1, modulationType: 'square' }; break; case 'supersaw': monoSynthOscSettings = { type: 'fatsawtooth', count: parseInt(dom.supersawCount.value), spread: parseFloat(dom.supersawSpread.value) }; break; case 'resonantbody': monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.resonantBodyHarmonicity.value), modulationIndex: parseFloat(dom.resonantBodyModIndex.value), modulationType: 'sine' }; break; case 'formantvoice': monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.formantVoiceHarmonicity.value), modulationIndex: parseFloat(dom.formantVoiceModIndex.value), modulationType: 'triangle' }; break; default: monoSynthOscSettings = { type: 'sine' }; }
                 settingsForSynthSet.oscillator = monoSynthOscSettings;
                 try { synth.set(settingsForSynthSet); console.log("APPLY_OSC_SETTINGS: Applied to PolySynth (MonoSynth voices):", settingsForSynthSet); } 
                 catch(e) { console.error("APPLY_OSC_SETTINGS_ERROR: Failed to set options for MonoSynth based PolySynth", selectedOscType, settingsForSynthSet, e); }
-
-            } else if (currentActiveSynthType === 'GrainPlayer' && selectedOscType === 'granular' && synth) {
+            } else if (currentActiveSynthType === 'GrainPlayer' && selectedOscType === 'granular' && synth && synth.loaded) {
                 synth.loop = dom.granularLoop.checked;
+                synth.loopStart = parseFloat(dom.granularLoopStart.value);
+                synth.loopEnd = parseFloat(dom.granularLoopEnd.value);
+                synth.reverse = dom.granularReverse.checked;
                 synth.grainSize = parseFloat(dom.granularGrainSize.value);
                 synth.overlap = parseFloat(dom.granularOverlap.value);
                 synth.detune = parseFloat(dom.granularDetune.value);
                 synth.playbackRate = parseFloat(dom.granularPlaybackRate.value);
-                synth.volume.value = parseFloat(dom.volume.value); // GrainPlayer has a volume property
+                synth.volume.value = parseFloat(dom.volume.value);
                 console.log("APPLY_OSC_SETTINGS: Applied to GrainPlayer:", {loop: synth.loop, grainSize: synth.grainSize, overlap: synth.overlap, detune:synth.detune, playbackRate: synth.playbackRate});
+            } else if (currentActiveSynthType === 'GrainPlayer' && selectedOscType === 'granular' && (!synth || !synth.loaded)) {
+                console.log("APPLY_OSC_SETTINGS: GrainPlayer selected but buffer not loaded or synth not ready. Waiting for file.");
             }
         }
         
-        function applyAudioChain() { /* ... (same as before - no mainFilter in chain) ... */ if (!synth || !tremoloEffect || !distortionEffect || !bitCrusherEffect || /*!mainFilter ||*/ !chorusEffect || !phaserEffect || !delayEffect || !pingPongDelayEffect || !reverbEffect ) { console.warn("APPLY_CHAIN_WARN: Core audio node(s) not ready."); return; } console.log("APPLY_CHAIN: Rebuilding audio chain..."); const allNodesInChain = [synth, tremoloEffect, distortionEffect, bitCrusherEffect, /*mainFilter,*/ chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect]; allNodesInChain.forEach(node => { if(node) try { node.disconnect(); } catch(e) {} }); let currentNode = synth; currentNode.connect(tremoloEffect); currentNode = tremoloEffect; if (dom.distEnable.checked && parseFloat(dom.distWet.value) > 0) { distortionEffect.wet.value = parseFloat(dom.distWet.value); currentNode.connect(distortionEffect); currentNode = distortionEffect; } else { distortionEffect.wet.value = 0; } if (dom.crusherEnable.checked && parseFloat(dom.crusherWet.value) > 0) { bitCrusherEffect.wet.value = parseFloat(dom.crusherWet.value); currentNode.connect(bitCrusherEffect); currentNode = bitCrusherEffect; } else { bitCrusherEffect.wet.value = 0; }  /* Filter is per-voice, not in master chain */ if (dom.chorusEnable.checked && parseFloat(dom.chorusWet.value) > 0) { chorusEffect.wet.value = parseFloat(dom.chorusWet.value); currentNode.connect(chorusEffect); currentNode = chorusEffect; } else { chorusEffect.wet.value = 0; } if (dom.phaserEnable.checked && parseFloat(dom.phaserWet.value) > 0) { phaserEffect.wet.value = parseFloat(dom.phaserWet.value); currentNode.connect(phaserEffect); currentNode = phaserEffect; } else { phaserEffect.wet.value = 0; } if (dom.delayEnable.checked && parseFloat(dom.delayWet.value) > 0) { delayEffect.wet.value = parseFloat(dom.delayWet.value); currentNode.connect(delayEffect); currentNode = delayEffect; } else { delayEffect.wet.value = 0; } if (dom.pingpongEnable.checked && parseFloat(dom.pingpongWet.value) > 0) { pingPongDelayEffect.wet.value = parseFloat(dom.pingpongWet.value); currentNode.connect(pingPongDelayEffect); currentNode = pingPongDelayEffect; } else { pingPongDelayEffect.wet.value = 0; } if (dom.reverbEnable.checked && parseFloat(dom.reverbWet.value) > 0) { reverbEffect.wet.value = parseFloat(dom.reverbWet.value); currentNode.connect(reverbEffect); currentNode = reverbEffect; } else { reverbEffect.wet.value = 0; } currentNode.toDestination(); console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); }
-        function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); if(synth.detune) lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (currentActiveSynthType === 'MonoSynth' && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': if(synth.detune) {lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune);} break; case 'filterCutoff': if (currentActiveSynthType === 'MonoSynth' && dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); } else { console.log("LFO to Filter: No active filter or filter envelope to modulate on synth voices for LFO, or synth is not MonoSynth-based.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
+        function applyAudioChain() { 
+            if (!synth || !tremoloEffect || !distortionEffect || !bitCrusherEffect || !ringModulatorEffect || !chorusEffect || !phaserEffect || !delayEffect || !pingPongDelayEffect || !reverbEffect ) { 
+                console.warn("APPLY_CHAIN_WARN: Core audio node(s) not ready."); return; 
+            } 
+            console.log("APPLY_CHAIN: Rebuilding audio chain..."); 
+            const allNodesInChain = [synth, tremoloEffect, distortionEffect, bitCrusherEffect, ringModulatorEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect]; 
+            allNodesInChain.forEach(node => { if(node) try { node.disconnect(); } catch(e) {} }); 
+            
+            let currentNode = synth; 
+            currentNode.connect(tremoloEffect); currentNode = tremoloEffect; 
+            if (dom.distEnable.checked && parseFloat(dom.distWet.value) > 0) { distortionEffect.wet.value = parseFloat(dom.distWet.value); currentNode.connect(distortionEffect); currentNode = distortionEffect; } else { distortionEffect.wet.value = 0; } 
+            if (dom.crusherEnable.checked && parseFloat(dom.crusherWet.value) > 0) { bitCrusherEffect.wet.value = parseFloat(dom.crusherWet.value); currentNode.connect(bitCrusherEffect); currentNode = bitCrusherEffect; } else { bitCrusherEffect.wet.value = 0; }  
+            if (dom.ringModEnable.checked && parseFloat(dom.ringModWet.value) > 0) { ringModulatorEffect.wet.value = parseFloat(dom.ringModWet.value); currentNode.connect(ringModulatorEffect); currentNode = ringModulatorEffect; } else { ringModulatorEffect.wet.value = 0;}
+            // Filter is per-voice for PolySynth(MonoSynth), or not applicable to GrainPlayer in this master effects chain.
+            if (dom.chorusEnable.checked && parseFloat(dom.chorusWet.value) > 0) { chorusEffect.wet.value = parseFloat(dom.chorusWet.value); currentNode.connect(chorusEffect); currentNode = chorusEffect; } else { chorusEffect.wet.value = 0; } 
+            if (dom.phaserEnable.checked && parseFloat(dom.phaserWet.value) > 0) { phaserEffect.wet.value = parseFloat(dom.phaserWet.value); currentNode.connect(phaserEffect); currentNode = phaserEffect; } else { phaserEffect.wet.value = 0; } 
+            if (dom.delayEnable.checked && parseFloat(dom.delayWet.value) > 0) { delayEffect.wet.value = parseFloat(dom.delayWet.value); currentNode.connect(delayEffect); currentNode = delayEffect; } else { delayEffect.wet.value = 0; } 
+            if (dom.pingpongEnable.checked && parseFloat(dom.pingpongWet.value) > 0) { pingPongDelayEffect.wet.value = parseFloat(dom.pingpongWet.value); currentNode.connect(pingPongDelayEffect); currentNode = pingPongDelayEffect; } else { pingPongDelayEffect.wet.value = 0; } 
+            if (dom.reverbEnable.checked && parseFloat(dom.reverbWet.value) > 0) { reverbEffect.wet.value = parseFloat(dom.reverbWet.value); currentNode.connect(reverbEffect); currentNode = reverbEffect; } else { reverbEffect.wet.value = 0; } 
+            currentNode.toDestination(); 
+            console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); 
+        }
+        function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); if(synth.detune) lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (currentActiveSynthType === 'MonoSynth' && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': if(synth.detune) {lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune);} break; case 'filterCutoff': if (currentActiveSynthType === 'MonoSynth' && dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); } else { console.log("LFO to Filter: Not applicable or no filter envelope on current synth.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
         function createOnScreenKeyboard() { /* ... (same) ... */ dom.keyboard.innerHTML = ''; let currentWhiteKeyOffset = 0; const whiteKeyWidth = 38; const blackKeyWidth = 26; for (let oct = 0; oct < 2; oct++) { notesLayout.forEach((noteLayout) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${noteLayout.freqName}${currentKeyOctave}`; keyElement.textContent = noteLayout.name; if (noteLayout.type === 'white') { keyElement.classList.add('white-key'); keyElement.style.left = `${currentWhiteKeyOffset}px`; dom.keyboard.appendChild(keyElement); currentWhiteKeyOffset += whiteKeyWidth; } else { keyElement.classList.add('black-key'); keyElement.style.left = `${currentWhiteKeyOffset - (whiteKeyWidth/2)}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } }
         function updateKeyVisualState(fullNoteName, isActive) { /* ... (same) ... */ const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.fullNote === fullNoteName) { key.classList.toggle('active', isActive); } }); }
-        
-        function playNote(fullNoteName, velocity = 0.75) { 
-            if (!synth || Tone.context.state !== 'running') return; 
-            try { 
-                if (currentActiveSynthType === 'GrainPlayer' && synth.loaded) {
-                    synth.volume.value = parseFloat(dom.volume.value); // Ensure volume is set
-                    synth.start(Tone.now(), 0, synth.buffer.duration); // Play full sample, or use loop points
-                } else if (currentActiveSynthType === 'MonoSynth') {
-                    synth.triggerAttack(fullNoteName, Tone.now(), velocity); 
-                }
-                updateKeyVisualState(fullNoteName, true); 
-            } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } 
-        }
-        function releaseNote(fullNoteName) { 
-            if (!synth) return; 
-            try { 
-                if (currentActiveSynthType === 'GrainPlayer') {
-                    // GrainPlayer doesn't have a traditional release. For monophonic, stop it.
-                    // For polyphonic, this would need voice management.
-                    synth.stop(Tone.now() + 0.05); 
-                } else if (currentActiveSynthType === 'MonoSynth') {
-                    synth.triggerRelease(fullNoteName, Tone.now() + 0.05); 
-                }
-                updateKeyVisualState(fullNoteName, false); 
-            } catch (error) { console.error(`Error releasing ${fullNoteName}:`, error); } 
-        }
-
+        function playNote(fullNoteName, velocity = 0.75) { /* ... (same) ... */ if (!synth || Tone.context.state !== 'running') return; try { if (currentActiveSynthType === 'GrainPlayer' && synth.loaded) { synth.volume.value = parseFloat(dom.volume.value); if (synth.loop) { synth.start(Tone.now(), synth.loopStart, synth.loopEnd - synth.loopStart); } else { synth.start(Tone.now(), 0, synth.buffer.duration); } } else if (currentActiveSynthType === 'MonoSynth') {synth.triggerAttack(fullNoteName, Tone.now(), velocity); } updateKeyVisualState(fullNoteName, true); } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } }
+        function releaseNote(fullNoteName) { /* ... (same) ... */ if (!synth) return; try { if (currentActiveSynthType === 'GrainPlayer' && synth.loaded) { synth.stop(Tone.now() + 0.05); } else if (currentActiveSynthType === 'MonoSynth') {synth.triggerRelease(fullNoteName, Tone.now() + 0.05); } updateKeyVisualState(fullNoteName, false); } catch (error) { console.error(`Error releasing ${fullNoteName}:`, error); } }
         window.addEventListener('keydown', (event) => { if (!synth || event.repeat || event.metaKey || event.ctrlKey || event.altKey || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return; const key = event.key.toLowerCase(); if (computerKeyNoteMapping[key] && !pressedComputerKeys.has(key)) { event.preventDefault(); const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; playNote(fullNoteName); pressedComputerKeys.add(key); } else if (key === 'z') { if (startingOctave > 0) { startingOctave--; dom.octaveDisplay.textContent = startingOctave; createOnScreenKeyboard(); } event.preventDefault(); } else if (key === 'x') { if (startingOctave < 8) { startingOctave++; dom.octaveDisplay.textContent = startingOctave; createOnScreenKeyboard(); } event.preventDefault(); } });
         window.addEventListener('keyup', (event) => { if (!synth || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return; const key = event.key.toLowerCase(); if (computerKeyNoteMapping[key] && pressedComputerKeys.has(key)) { event.preventDefault(); const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; releaseNote(fullNoteName); pressedComputerKeys.delete(key); } });
         async function initializeMIDI() { /* ... (same - includes updated error messages) ... */ dom.midiStatus.textContent = "Accessing MIDI..."; if (navigator.requestMIDIAccess) { try { midiAccess = await navigator.requestMIDIAccess({ sysex: false }); dom.midiStatus.textContent = "MIDI Granted. Listening..."; startMIDIListening(); } catch (e) { let specificAdvice = ""; if (e.message && e.message.toLowerCase().includes("permission add-on")) { specificAdvice = " This error often appears in Firefox if MIDI permissions are not set or an add-on like Jazz-MIDI is needed and not configured. Please check your browser's site permissions for MIDI and ensure any required MIDI extensions are active."; } else if (e.name === "SecurityError") { specificAdvice = " MIDI access was denied by a security policy. This can happen if the page is not served over HTTPS, or if MIDI is disabled in browser settings/permissions."; } else { specificAdvice = " Please ensure your MIDI device is connected and check your browser's MIDI settings and site permissions."; } dom.midiStatus.textContent = `MIDI Access Error.${specificAdvice}`; console.error("Could not access MIDI devices:", e.name, e.message, specificAdvice); } } else { dom.midiStatus.textContent = "Web MIDI API not supported in this browser. Use Chrome/Edge for MIDI."; console.warn("Web MIDI API not supported in this browser!"); } }
@@ -463,7 +471,7 @@
         // --- UI Control Event Listeners ---
         dom.startAudioButton.addEventListener('click', async (e) => { e.target.blur(); dom.audioContextMessageOverlay.classList.remove('visible'); const success = await initializeAudio(); if(success) console.log("Audio init OK from Start."); else console.error("Audio init FAILED from Start."); });
         dom.midiLearnButton.addEventListener('click', (e) => { toggleGlobalMidiLearnMode(); e.target.blur(); });
-        Object.keys(paramDefinitions).forEach(paramKey => { const definition = paramDefinitions[paramKey]; const element = dom[definition.elementId]; if (element) { const eventType = (definition.type === 'range') ? 'mousedown' : 'focus'; element.addEventListener(eventType, () => { if (isGlobalMidiLearnActive && !paramKeyToLearn) { setupMidiLearnForElement(paramKey); } }); element.addEventListener('change', (e) => e.target.blur()); if (definition.type === 'range') element.addEventListener('input', (e) => e.target.blur());} else { console.warn(`MIDI Learn Setup: Element ID '${definition.elementId}' for param '${paramKey}' not found.`); }});
+        Object.keys(paramDefinitions).forEach(paramKey => { const definition = paramDefinitions[paramKey]; const element = dom[definition.elementId]; if (element) { const eventType = (definition.type === 'range' || definition.type === 'file') ? 'mousedown' : 'focus'; element.addEventListener(eventType, () => { if (isGlobalMidiLearnActive && !paramKeyToLearn) { setupMidiLearnForElement(paramKey); } }); element.addEventListener('change', (e) => e.target.blur()); if (definition.type === 'range') element.addEventListener('input', (e) => e.target.blur());} else { console.warn(`MIDI Learn Setup: Element ID '${definition.elementId}' for param '${paramKey}' not found.`); }});
 
         dom.oscType.addEventListener('change', (e) => { updateOscillatorType(); e.target.blur(); });
         const oscParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); e.target.blur(); };
@@ -477,34 +485,12 @@
         dom.formantVoiceHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); oscParamHandler(e); });
         dom.formantVoiceModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0); oscParamHandler(e); });
         
-        // Granular controls
-        dom.granularFileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file && file.type === "audio/wav") {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    Tone.Buffer.fromUrl(e.target.result).then(buffer => {
-                        grainPlayerBuffer = buffer;
-                        if (synth && currentActiveSynthType === 'GrainPlayer') {
-                            synth.buffer = grainPlayerBuffer;
-                            console.log("GRANULAR: New WAV buffer loaded into GrainPlayer.");
-                        } else if (dom.oscType.value === 'granular') { // If granular is selected but synth isn't GrainPlayer yet
-                            updateOscillatorType(); // This will now create GrainPlayer with the buffer
-                        }
-                        dom.midiLearnStatus.textContent = `Loaded: ${file.name}`;
-                    }).catch(err => {
-                        console.error("Error loading WAV into Tone.Buffer:", err);
-                        dom.midiLearnStatus.textContent = "Error loading WAV.";
-                    });
-                };
-                reader.readAsDataURL(file);
-            } else if (file) {
-                dom.midiLearnStatus.textContent = "Please select a .wav file.";
-                console.warn("GRANULAR: Non-WAV file selected.");
-            }
-            event.target.blur();
-        });
+        // Granular controls 
+        dom.granularFileInput.addEventListener('change', (event) => { const file = event.target.files[0]; if (file && file.type === "audio/wav") { const reader = new FileReader(); reader.onload = (e_reader) => { Tone.Buffer.fromUrl(e_reader.target.result).then(buffer => { grainPlayerBuffer = buffer; if (dom.oscType.value === 'granular') { updateOscillatorType(); } dom.midiLearnStatus.textContent = `Loaded: ${file.name.substring(0,20)}...`; }).catch(err => { console.error("Error loading WAV into Tone.Buffer:", err); dom.midiLearnStatus.textContent = "Error loading WAV."; }); }; reader.readAsDataURL(file); } else if (file) { dom.midiLearnStatus.textContent = "Please select a .wav file."; console.warn("GRANULAR: Non-WAV file selected."); } event.target.blur(); });
         dom.granularLoop.addEventListener('change', (e) => { if(synth && currentActiveSynthType === 'GrainPlayer') synth.loop = e.target.checked; e.target.blur(); });
+        dom.granularLoopStart.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopStart, dom.granularLoopStartDisplay, '', 2); if(synth && currentActiveSynthType === 'GrainPlayer') synth.loopStart = parseFloat(e.target.value); e.target.blur(); });
+        dom.granularLoopEnd.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopEnd, dom.granularLoopEndDisplay, '', 2); if(synth && currentActiveSynthType === 'GrainPlayer') synth.loopEnd = parseFloat(e.target.value); e.target.blur(); });
+        dom.granularReverse.addEventListener('change', (e) => { if(synth && currentActiveSynthType === 'GrainPlayer') synth.reverse = e.target.checked; e.target.blur(); });
         dom.granularGrainSize.addEventListener('input', (e) => { updateSliderDisplay(dom.granularGrainSize, dom.granularGrainSizeDisplay, 's', 3); if(synth && currentActiveSynthType === 'GrainPlayer') synth.grainSize = parseFloat(e.target.value); e.target.blur(); });
         dom.granularOverlap.addEventListener('input', (e) => { updateSliderDisplay(dom.granularOverlap, dom.granularOverlapDisplay, 's', 3); if(synth && currentActiveSynthType === 'GrainPlayer') synth.overlap = parseFloat(e.target.value); e.target.blur(); });
         dom.granularDetune.addEventListener('input', (e) => { updateSliderDisplay(dom.granularDetune, dom.granularDetuneDisplay, ' cents', 0); if(synth && currentActiveSynthType === 'GrainPlayer') synth.detune = parseFloat(e.target.value); e.target.blur(); });
@@ -537,12 +523,14 @@
         dom.lfo1Depth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2); lfoUpdateHandler(e); });
         dom.lfo1Destination.addEventListener('change', lfoUpdateHandler);
 
+        // Effect Control Listeners
         const effectToggleHandler = (e) => { applyAudioChain(); e.target.blur(); };
         const effectWetHandler = (slider, display, unit, decimals, e) => { updateSliderDisplay(slider, display, unit, decimals); applyAudioChain(); e.target.blur(); };
         const effectParamHandler = (slider, display, unit, decimals, effectNode, paramName, e) => { updateSliderDisplay(slider, display, unit, decimals); if(effectNode && effectNode[paramName] !== undefined) { if(effectNode[paramName].value !== undefined) {effectNode[paramName].value = parseFloat(slider.value); } else {effectNode[paramName] = parseFloat(slider.value);} } e.target.blur(); };
         
         dom.distEnable.addEventListener('change', effectToggleHandler); dom.distAmount.addEventListener('input', (e) => effectParamHandler(dom.distAmount, dom.distAmountDisplay, '', 2, distortionEffect, 'distortion', e)); dom.distWet.addEventListener('input', (e) => effectWetHandler(dom.distWet, dom.distWetDisplay, '', 2, e));
         dom.crusherEnable.addEventListener('change', effectToggleHandler); dom.crusherBits.addEventListener('input', (e) => { updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, ' bits', 0); if(bitCrusherEffect) bitCrusherEffect.bits.value = parseInt(dom.crusherBits.value); e.target.blur(); }); dom.crusherWet.addEventListener('input', (e) => effectWetHandler(dom.crusherWet, dom.crusherWetDisplay, '', 2, e));
+        dom.ringModEnable.addEventListener('change', effectToggleHandler); dom.ringModFrequency.addEventListener('input', (e) => effectParamHandler(dom.ringModFrequency, dom.ringModFrequencyDisplay, ' Hz', 0, ringModulatorEffect, 'frequency', e)); dom.ringModWet.addEventListener('input', (e) => effectWetHandler(dom.ringModWet, dom.ringModWetDisplay, '', 2, e));
         dom.chorusEnable.addEventListener('change', effectToggleHandler); dom.chorusRate.addEventListener('input', (e) => effectParamHandler(dom.chorusRate, dom.chorusRateDisplay, 'Hz', 1, chorusEffect.frequency, 'value', e)); dom.chorusDepth.addEventListener('input', (e) => effectParamHandler(dom.chorusDepth, dom.chorusDepthDisplay, '', 2, chorusEffect, 'depth', e)); dom.chorusFeedback.addEventListener('input', (e) => effectParamHandler(dom.chorusFeedback, dom.chorusFeedbackDisplay, '', 2, chorusEffect.feedback, 'value', e)); dom.chorusWet.addEventListener('input', (e) => effectWetHandler(dom.chorusWet, dom.chorusWetDisplay, '', 2, e));
         dom.phaserEnable.addEventListener('change', effectToggleHandler); dom.phaserFrequency.addEventListener('input', (e) => effectParamHandler(dom.phaserFrequency, dom.phaserFrequencyDisplay, 'Hz', 1, phaserEffect.frequency, 'value', e)); dom.phaserOctaves.addEventListener('input', (e) => effectParamHandler(dom.phaserOctaves, dom.phaserOctavesDisplay, '', 1, phaserEffect, 'octaves', e)); dom.phaserBaseFreq.addEventListener('input', (e) => effectParamHandler(dom.phaserBaseFreq, dom.phaserBaseFreqDisplay, 'Hz', 0, phaserEffect, 'baseFrequency', e)); dom.phaserWet.addEventListener('input', (e) => effectWetHandler(dom.phaserWet, dom.phaserWetDisplay, '', 2, e));
         dom.delayEnable.addEventListener('change', effectToggleHandler); dom.delayTime.addEventListener('input', (e) => effectParamHandler(dom.delayTime, dom.delayTimeDisplay, 's', 2, delayEffect.delayTime, 'value', e)); dom.delayFeedback.addEventListener('input', (e) => effectParamHandler(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2, delayEffect.feedback, 'value', e)); dom.delayWet.addEventListener('input', (e) => effectWetHandler(dom.delayWet, dom.delayWetDisplay, '', 2, e));
@@ -565,16 +553,19 @@
             updateSliderDisplay(dom.resonantBodyHarmonicity, dom.resonantBodyHarmonicityDisplay, '',1); updateSliderDisplay(dom.resonantBodyModIndex, dom.resonantBodyModIndexDisplay, '', 0);
             updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '',1); updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0);
             updateSliderDisplay(dom.granularGrainSize, dom.granularGrainSizeDisplay, 's', 3); updateSliderDisplay(dom.granularOverlap, dom.granularOverlapDisplay, 's', 3); updateSliderDisplay(dom.granularDetune, dom.granularDetuneDisplay, 'cents', 0); updateSliderDisplay(dom.granularPlaybackRate, dom.granularPlaybackRateDisplay, 'x',2);
+            updateSliderDisplay(dom.granularLoopStart, dom.granularLoopStartDisplay, '', 2); updateSliderDisplay(dom.granularLoopEnd, dom.granularLoopEndDisplay, '', 2);
             updateSliderDisplay(dom.lfo1Rate, dom.lfo1RateDisplay, 'Hz'); updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2);
             updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz');
             updateSliderDisplay(dom.distAmount, dom.distAmountDisplay, '', 2); updateSliderDisplay(dom.distWet, dom.distWetDisplay, '', 2);
             updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, 'bits', 0); updateSliderDisplay(dom.crusherWet, dom.crusherWetDisplay, '', 2);
+            updateSliderDisplay(dom.ringModFrequency, dom.ringModFrequencyDisplay, 'Hz', 0); updateSliderDisplay(dom.ringModWet, dom.ringModWetDisplay, '', 2);
             updateSliderDisplay(dom.chorusRate, dom.chorusRateDisplay, 'Hz'); updateSliderDisplay(dom.chorusDepth, dom.chorusDepthDisplay, '', 2); updateSliderDisplay(dom.chorusFeedback, dom.chorusFeedbackDisplay, '', 2); updateSliderDisplay(dom.chorusWet, dom.chorusWetDisplay, '', 2);
             updateSliderDisplay(dom.phaserFrequency, dom.phaserFrequencyDisplay, 'Hz'); updateSliderDisplay(dom.phaserOctaves, dom.phaserOctavesDisplay, '', 1); updateSliderDisplay(dom.phaserBaseFreq, dom.phaserBaseFreqDisplay, 'Hz', 0); updateSliderDisplay(dom.phaserWet, dom.phaserWetDisplay, '', 2);
             updateSliderDisplay(dom.delayTime, dom.delayTimeDisplay, 's', 2); updateSliderDisplay(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2); updateSliderDisplay(dom.delayWet, dom.delayWetDisplay, '', 2);
             updateSliderDisplay(dom.pingpongDelayTime, dom.pingpongDelayTimeDisplay, 's', 2); updateSliderDisplay(dom.pingpongFeedback, dom.pingpongFeedbackDisplay, '', 2); updateSliderDisplay(dom.pingpongWet, dom.pingpongWetDisplay, '', 2);
             updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); updateSliderDisplay(dom.reverbWet, dom.reverbWetDisplay, '', 2);
             
+            // Initial visibility of contextual controls
             dom.pwmControls.classList.toggle('hidden', dom.oscType.value !== 'pwm'); 
             dom.fmControls.classList.toggle('hidden', dom.oscType.value !== 'fmsine');
             dom.supersawControls.classList.toggle('hidden', dom.oscType.value !== 'supersaw');
