@@ -175,7 +175,7 @@
 
 
         // --- DOM Element Grabbing (Centralized) ---
-        const dom = { /* ... (all DOM elements) ... */
+        const dom = { /* ... (all previous dom elements PLUS ringmod and granular) ... */
             oscType: document.getElementById('osc-type'), pwmControls: document.getElementById('pwm-controls'), pwmSpeed: document.getElementById('pwm-speed'), pwmSpeedDisplay: document.getElementById('pwm-speed-display'), fmControls: document.getElementById('fm-controls'), fmHarmonicity: document.getElementById('fm-harmonicity'), fmHarmonicityDisplay: document.getElementById('fm-harmonicity-display'), fmModIndex: document.getElementById('fm-mod-index'), fmModIndexDisplay: document.getElementById('fm-mod-index-display'), 
             supersawControls: document.getElementById('supersaw-controls'), supersawCount: document.getElementById('supersaw-count'), supersawCountDisplay: document.getElementById('supersaw-count-display'), supersawSpread: document.getElementById('supersaw-spread'), supersawSpreadDisplay: document.getElementById('supersaw-spread-display'),
             resonantBodyControls: document.getElementById('resonantbody-controls'), resonantBodyHarmonicity: document.getElementById('resonantbody-harmonicity'), resonantBodyHarmonicityDisplay: document.getElementById('resonantbody-harmonicity-display'), resonantBodyModIndex: document.getElementById('resonantbody-mod-index'), resonantBodyModIndexDisplay: document.getElementById('resonantbody-mod-index-display'),
@@ -281,8 +281,7 @@
                     distortionEffect = new Tone.Distortion(parseFloat(dom.distAmount.value));
                     bitCrusherEffect = new Tone.BitCrusher(parseInt(dom.crusherBits.value));
                     ringModulatorEffect = new Tone.FrequencyShifter(parseFloat(dom.ringModFrequency.value)); 
-                    // For FrequencyShifter to act as a ring modulator, depth isn't a direct param. The effect is achieved by shifting and mixing.
-                    // The 'frequency' param of FrequencyShifter is the modulator frequency.
+                    // For FrequencyShifter to act as a ring modulator, wet level controls mix. The core "depth" of shift is always there.
                     chorusEffect = new Tone.Chorus({ frequency: parseFloat(dom.chorusRate.value), depth: parseFloat(dom.chorusDepth.value), feedback: parseFloat(dom.chorusFeedback.value), delayTime: 3.5, type: "sine" });
                     phaserEffect = new Tone.Phaser({ frequency: parseFloat(dom.phaserFrequency.value), octaves: parseFloat(dom.phaserOctaves.value), baseFrequency: parseFloat(dom.phaserBaseFreq.value) });
                     delayEffect = new Tone.FeedbackDelay({ delayTime: parseFloat(dom.delayTime.value), feedback: parseFloat(dom.delayFeedback.value) });
@@ -304,14 +303,14 @@
             
             updateOscillatorType(); 
             
-            applyAudioChain(); 
-            updateLFO1Connections(); 
+            // applyAudioChain and updateLFO1Connections are called within updateOscillatorType if synth is (re)created.
+            // If synth already existed, they are called from there too.
 
             console.log(`AUDIO_INIT: PRE-TEST_SOUND. Tone.context.state: ${Tone.context.state}. Synth exists: ${!!synth}. Synth type: ${currentActiveSynthType}`);
             if (synth && Tone.context.state === 'running' && currentActiveSynthType !== 'GrainPlayer') { 
                 synth.triggerAttackRelease("C4", "8n", Tone.now() + 0.1); 
                 console.log("AUDIO_INIT: TEST SOUND (C4) triggered for PolySynth.");
-            } else { console.warn("AUDIO_INIT: TEST SOUND NOT TRIGGERED (or Granular mode active)."); }
+            } else { console.warn("AUDIO_INIT: TEST SOUND NOT TRIGGERED (or Granular mode active or synth not ready)."); }
             
             await initializeMIDI();
             loadMidiMappings();
@@ -358,13 +357,15 @@
 
 
                 if (newActiveSynthType === 'GrainPlayer') {
+                    // Create an empty GrainPlayer first. Buffer will be assigned by file loader or if already loaded.
+                    synth = new Tone.GrainPlayer();
+                    console.log("UPDATE_OSC_TYPE: New GrainPlayer instance created (buffer may not be loaded yet).");
                     if (grainPlayerBuffer && grainPlayerBuffer.loaded) {
-                        synth = new Tone.GrainPlayer(grainPlayerBuffer);
-                        console.log("UPDATE_OSC_TYPE: New GrainPlayer created.");
+                        synth.buffer = grainPlayerBuffer;
+                        console.log("UPDATE_OSC_TYPE: Existing buffer assigned to new GrainPlayer.");
                     } else {
-                        synth = null; 
                         dom.midiLearnStatus.textContent = "Load WAV for Granular";
-                        console.warn("UPDATE_OSC_TYPE: GrainPlayer needs a buffer. Load a WAV file.");
+                        console.warn("UPDATE_OSC_TYPE: GrainPlayer created, but needs a buffer. Load a WAV file.");
                     }
                 } else { 
                     currentActiveSynthType = 'MonoSynth'; 
@@ -372,7 +373,7 @@
                     console.log("UPDATE_OSC_TYPE: New PolySynth(MonoSynth) created.");
                 }
                 
-                if (synth) {
+                if (synth) { // Check if synth (GrainPlayer or PolySynth) was successfully created
                     synth.volume.value = oldVolume;
                 }
             }
@@ -381,6 +382,10 @@
                  applyCurrentOscillatorSpecificSettings(newSelectedOscType);
                  applyAudioChain(); 
                  updateLFO1Connections();
+            } else if (newActiveSynthType === 'GrainPlayer' && !grainPlayerBuffer) {
+                // If granular is selected and no buffer, synth will be null.
+                // We still might want to apply the audio chain with synth as null to disconnect effects.
+                applyAudioChain(); 
             }
         }
 
@@ -421,7 +426,7 @@
                 synth.overlap = parseFloat(dom.granularOverlap.value);
                 synth.detune = parseFloat(dom.granularDetune.value);
                 synth.playbackRate = parseFloat(dom.granularPlaybackRate.value);
-                synth.volume.value = parseFloat(dom.volume.value);
+                synth.volume.value = parseFloat(dom.volume.value); // Also ensure GrainPlayer volume is set
                 console.log("APPLY_OSC_SETTINGS: Applied to GrainPlayer:", {loop: synth.loop, grainSize: synth.grainSize, overlap: synth.overlap, detune:synth.detune, playbackRate: synth.playbackRate});
             } else if (currentActiveSynthType === 'GrainPlayer' && selectedOscType === 'granular' && (!synth || !synth.loaded)) {
                 console.log("APPLY_OSC_SETTINGS: GrainPlayer selected but buffer not loaded or synth not ready. Waiting for file.");
@@ -429,12 +434,11 @@
         }
         
         function applyAudioChain() { 
-            if (!synth || !tremoloEffect || !distortionEffect || !bitCrusherEffect || !ringModulatorEffect || !chorusEffect || !phaserEffect || !delayEffect || !pingPongDelayEffect || !reverbEffect ) { 
-                console.warn("APPLY_CHAIN_WARN: Core audio node(s) not ready."); return; 
-            } 
+            const allEffectNodes = [tremoloEffect, distortionEffect, bitCrusherEffect, ringModulatorEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect];
+            allEffectNodes.forEach(node => { if(node) try { node.disconnect(); } catch(e){} }); // Disconnect all effects
+            if (!synth) { console.warn("APPLY_CHAIN_WARN: Synth object is null, cannot build audio chain."); return; } 
+
             console.log("APPLY_CHAIN: Rebuilding audio chain..."); 
-            const allNodesInChain = [synth, tremoloEffect, distortionEffect, bitCrusherEffect, ringModulatorEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect]; 
-            allNodesInChain.forEach(node => { if(node) try { node.disconnect(); } catch(e) {} }); 
             
             let currentNode = synth; 
             currentNode.connect(tremoloEffect); currentNode = tremoloEffect; 
@@ -450,10 +454,10 @@
             currentNode.toDestination(); 
             console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); 
         }
-        function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); if(synth.detune) lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (currentActiveSynthType === 'MonoSynth' && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': if(synth.detune) {lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune);} break; case 'filterCutoff': if (currentActiveSynthType === 'MonoSynth' && dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); } else { console.log("LFO to Filter: Not applicable or no filter envelope on current synth.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
+        function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); if(currentActiveSynthType === 'MonoSynth' && synth.detune) lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (currentActiveSynthType === 'MonoSynth' && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': if(currentActiveSynthType === 'MonoSynth' && synth.detune) {lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune);} else { console.log("LFO to Pitch: Not applicable for current synth type.");} break; case 'filterCutoff': if (currentActiveSynthType === 'MonoSynth' && dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); } else { console.log("LFO to Filter: Not applicable or no filter envelope on current synth.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
         function createOnScreenKeyboard() { /* ... (same) ... */ dom.keyboard.innerHTML = ''; let currentWhiteKeyOffset = 0; const whiteKeyWidth = 38; const blackKeyWidth = 26; for (let oct = 0; oct < 2; oct++) { notesLayout.forEach((noteLayout) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${noteLayout.freqName}${currentKeyOctave}`; keyElement.textContent = noteLayout.name; if (noteLayout.type === 'white') { keyElement.classList.add('white-key'); keyElement.style.left = `${currentWhiteKeyOffset}px`; dom.keyboard.appendChild(keyElement); currentWhiteKeyOffset += whiteKeyWidth; } else { keyElement.classList.add('black-key'); keyElement.style.left = `${currentWhiteKeyOffset - (whiteKeyWidth/2)}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } }
         function updateKeyVisualState(fullNoteName, isActive) { /* ... (same) ... */ const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.fullNote === fullNoteName) { key.classList.toggle('active', isActive); } }); }
-        function playNote(fullNoteName, velocity = 0.75) { /* ... (same) ... */ if (!synth || Tone.context.state !== 'running') return; try { if (currentActiveSynthType === 'GrainPlayer' && synth.loaded) { synth.volume.value = parseFloat(dom.volume.value); if (synth.loop) { synth.start(Tone.now(), synth.loopStart, synth.loopEnd - synth.loopStart); } else { synth.start(Tone.now(), 0, synth.buffer.duration); } } else if (currentActiveSynthType === 'MonoSynth') {synth.triggerAttack(fullNoteName, Tone.now(), velocity); } updateKeyVisualState(fullNoteName, true); } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } }
+        function playNote(fullNoteName, velocity = 0.75) { /* ... (same) ... */ if (!synth || Tone.context.state !== 'running') { console.warn("PlayNote: Synth not ready or audio context not running."); return; } try { if (currentActiveSynthType === 'GrainPlayer') { if (synth.loaded) { synth.volume.value = parseFloat(dom.volume.value); if (synth.loop && synth.buffer) { const loopStartSec = synth.loopStart * synth.buffer.duration; const loopEndSec = synth.loopEnd * synth.buffer.duration; let duration = loopEndSec > loopStartSec ? loopEndSec - loopStartSec : synth.buffer.duration - loopStartSec + loopEndSec; if (duration <= 0) duration = synth.buffer.duration - loopStartSec; if (duration > 0) synth.start(Tone.now(), loopStartSec, duration); else console.warn("GrainPlayer: Loop duration invalid.");} else if (synth.buffer) { synth.start(Tone.now(), 0, synth.buffer.duration); } else { console.warn("PlayNote (GrainPlayer): Buffer not available."); return; } } else { console.warn("PlayNote (GrainPlayer): Buffer not loaded. Cannot play."); return; } } else if (currentActiveSynthType === 'MonoSynth') {synth.triggerAttack(fullNoteName, Tone.now(), velocity); } updateKeyVisualState(fullNoteName, true); } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } }
         function releaseNote(fullNoteName) { /* ... (same) ... */ if (!synth) return; try { if (currentActiveSynthType === 'GrainPlayer' && synth.loaded) { synth.stop(Tone.now() + 0.05); } else if (currentActiveSynthType === 'MonoSynth') {synth.triggerRelease(fullNoteName, Tone.now() + 0.05); } updateKeyVisualState(fullNoteName, false); } catch (error) { console.error(`Error releasing ${fullNoteName}:`, error); } }
         window.addEventListener('keydown', (event) => { if (!synth || event.repeat || event.metaKey || event.ctrlKey || event.altKey || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return; const key = event.key.toLowerCase(); if (computerKeyNoteMapping[key] && !pressedComputerKeys.has(key)) { event.preventDefault(); const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; playNote(fullNoteName); pressedComputerKeys.add(key); } else if (key === 'z') { if (startingOctave > 0) { startingOctave--; dom.octaveDisplay.textContent = startingOctave; createOnScreenKeyboard(); } event.preventDefault(); } else if (key === 'x') { if (startingOctave < 8) { startingOctave++; dom.octaveDisplay.textContent = startingOctave; createOnScreenKeyboard(); } event.preventDefault(); } });
         window.addEventListener('keyup', (event) => { if (!synth || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return; const key = event.key.toLowerCase(); if (computerKeyNoteMapping[key] && pressedComputerKeys.has(key)) { event.preventDefault(); const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; releaseNote(fullNoteName); pressedComputerKeys.delete(key); } });
