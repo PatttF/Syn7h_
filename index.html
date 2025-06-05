@@ -14,36 +14,12 @@
             background-color: #1a202c; 
             color: #e2e8f0; 
         }
-        .keyboard-container {
-            width: 100%;
-            overflow-x: auto; 
-            padding-bottom: 10px; 
-        }
-        .keyboard { 
-            display: flex; 
-            justify-content: flex-start; 
-            align-items: flex-start; 
-            padding: 20px; 
-            background-color: #2d3748; 
-            border-radius: 8px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2); 
-            position: relative; 
-            min-width: min-content; 
-            -webkit-user-select: none; -ms-user-select: none; user-select: none; 
-        }
+        .keyboard-container { width: 100%; overflow-x: auto; padding-bottom: 10px; }
+        .keyboard { display: flex; justify-content: flex-start; align-items: flex-start; padding: 20px; background-color: #2d3748; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; min-width: min-content; -webkit-user-select: none; -ms-user-select: none; user-select: none; }
         .key { border: 1px solid #4a5568; border-radius: 5px; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; font-size: 10px; padding-bottom: 5px; transition: background-color 0.1s ease; box-sizing: border-box; }
         .white-key { background-color: #f7fafc; color: #2d3748; width: 38px; height: 170px; z-index: 1; margin-right: -1px; }
         .white-key:active, .white-key.active { background-color: #a0aec0; }
-        .black-key { 
-            background-color: #2d3748; 
-            color: #cbd5e0; 
-            width: 26px; 
-            height: 100px; 
-            position: absolute; 
-            z-index: 2; 
-            border: 1px solid #1a202c;
-            margin-left: -13px; 
-        }
+        .black-key { background-color: #2d3748; color: #cbd5e0; width: 26px; height: 100px; position: absolute; z-index: 2; border: 1px solid #1a202c; margin-left: -13px; }
         .black-key:active, .black-key.active { background-color: #4a5568; }
         
         .controls-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; width: 100%; max-width: 1400px; }
@@ -53,6 +29,7 @@
         .control-group input[type="checkbox"] { width: auto; align-self:center; height: 20px; padding:0; margin-bottom: 8px; accent-color: #f56565;}
         .control-group button { background-color: #f56565; color: #1a202c; font-weight: bold; border: none;}
         .control-group button:hover { background-color: #dd5858; }
+        .control-group button.learn-active { background-color: #48bb78; color: #1a202c; } /* Green for active learn */
         .control-group input[type="range"] { padding: 0; height: auto; accent-color: #f56565; }
         .control-group .button-group { display: flex; justify-content: space-around; }
         .control-group .button-group button { width: auto; padding: 6px 10px; }
@@ -65,7 +42,7 @@
         .message-box-content button { margin-top: 15px; padding: 10px 20px; border-radius: 6px; background-color: #f56565; color: #1a202c; font-weight: bold; border: none; cursor: pointer; transition: background-color 0.2s ease;}
         .message-box-content button:hover { background-color: #dd5858; }
         
-        #midi-status { margin-top: 10px; padding: 8px; background-color: #2d3748; border-radius: 6px; text-align:center; font-size: 0.9em; color: #a0aec0; border: 1px solid #4a5568;}
+        #midi-status, #midi-learn-status { margin-top: 10px; padding: 8px; background-color: #2d3748; border-radius: 6px; text-align:center; font-size: 0.9em; color: #a0aec0; border: 1px solid #4a5568;}
         .instructions { font-size: 0.8em; color: #718096; margin-top:10px; text-align:center; }
         
         .title-container { display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
@@ -75,7 +52,7 @@
 </head>
 <body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 select-none">
 
-    <div class="w-full max-w-7xl mx-auto flex flex-col items-center"> <!-- Main container -->
+    <div class="w-full max-w-7xl mx-auto flex flex-col items-center">
         <div class="title-container">
             <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
                 <path d="M 80 20 C 80 10, 70 10, 60 10 S 40 10, 40 20 C 40 30, 50 30, 60 30 S 80 30, 80 40 C 80 50, 70 50, 60 50 S 40 50, 40 60 C 40 70, 50 70, 60 70 S 80 70, 80 80" stroke-linecap="round" stroke-linejoin="round"/>
@@ -89,7 +66,9 @@
         <div class="controls-container mb-8">
             <!-- OSCILLATOR GROUP -->
             <div class="control-group">
-                <span class="group-title">Oscillator</span>
+                <span class="group-title">Oscillator & MIDI Learn</span>
+                <button id="midi-learn-button" class="mb-2">MIDI Learn</button>
+                <div id="midi-learn-status" class="text-xs mb-2 h-6"></div> <!-- Status display for MIDI Learn -->
                 <label for="osc-type">Type</label>
                 <select id="osc-type">
                     <option value="sine">Sine</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="sawtooth">Sawtooth</option>
@@ -118,7 +97,8 @@
                     <label for="formantvoice-mod-index">FM Index (Formant)</label><input type="range" id="formantvoice-mod-index" min="1" max="30" value="5" step="1"><span id="formantvoice-mod-index-display" class="value-display">5</span>
                 </div>
                 <label for="octave-display-label">Starting Octave: <span id="octave-display">4</span></label>
-                <div class="button-group">
+                <!-- Octave buttons are now decorative, control via Z/X keys -->
+                <div class="button-group mt-1">
                     <button id="octave-down-btn" class="opacity-50 cursor-not-allowed">-</button> 
                     <button id="octave-up-btn" class="ml-2 opacity-50 cursor-not-allowed">+</button>
                 </div>
@@ -168,29 +148,25 @@
         // --- Global Variables & Tone.js Objects ---
         let synth;
         let startingOctave = 4; 
-        // mainFilter removed
         let lfo1, lfo1ToDetuneGain, lfo1ToFilterFreqGain;
         let tremoloEffect, distortionEffect, bitCrusherEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect;
         let currentPolySynthVoiceType = Tone.MonoSynth; 
+        let isGlobalMidiLearnActive = false;
+        let paramKeyToLearn = null; // Stores the key from paramDefinitions for the control being learned
+        let midiMappings = {}; // Stores { ccNumber: paramKey }
+
 
         // --- DOM Element Grabbing (Centralized) ---
-        const dom = {
+        const dom = { // All DOM elements are grabbed once here
             oscType: document.getElementById('osc-type'), pwmControls: document.getElementById('pwm-controls'), pwmSpeed: document.getElementById('pwm-speed'), pwmSpeedDisplay: document.getElementById('pwm-speed-display'), fmControls: document.getElementById('fm-controls'), fmHarmonicity: document.getElementById('fm-harmonicity'), fmHarmonicityDisplay: document.getElementById('fm-harmonicity-display'), fmModIndex: document.getElementById('fm-mod-index'), fmModIndexDisplay: document.getElementById('fm-mod-index-display'), 
             supersawControls: document.getElementById('supersaw-controls'), supersawCount: document.getElementById('supersaw-count'), supersawCountDisplay: document.getElementById('supersaw-count-display'), supersawSpread: document.getElementById('supersaw-spread'), supersawSpreadDisplay: document.getElementById('supersaw-spread-display'),
             resonantBodyControls: document.getElementById('resonantbody-controls'), resonantBodyHarmonicity: document.getElementById('resonantbody-harmonicity'), resonantBodyHarmonicityDisplay: document.getElementById('resonantbody-harmonicity-display'), resonantBodyModIndex: document.getElementById('resonantbody-mod-index'), resonantBodyModIndexDisplay: document.getElementById('resonantbody-mod-index-display'),
             formantVoiceControls: document.getElementById('formantvoice-controls'), formantVoiceHarmonicity: document.getElementById('formantvoice-harmonicity'), formantVoiceHarmonicityDisplay: document.getElementById('formantvoice-harmonicity-display'), formantVoiceModIndex: document.getElementById('formantvoice-mod-index'), formantVoiceModIndexDisplay: document.getElementById('formantvoice-mod-index-display'),
-            octaveDisplay: document.getElementById('octave-display'), // octaveUpBtn and octaveDownBtn removed from here as they are decorative
+            octaveDisplay: document.getElementById('octave-display'), 
             volume: document.getElementById('volume'), volumeDisplay: document.getElementById('volume-display'), 
-            ampEnvAttack: document.getElementById('amp-env-attack'), ampEnvAttackDisplay: document.getElementById('amp-env-attack-display'),
-            ampEnvDecay: document.getElementById('amp-env-decay'), ampEnvDecayDisplay: document.getElementById('amp-env-decay-display'),
-            ampEnvSustain: document.getElementById('amp-env-sustain'), ampEnvSustainDisplay: document.getElementById('amp-env-sustain-display'),
-            ampEnvRelease: document.getElementById('amp-env-release'), ampEnvReleaseDisplay: document.getElementById('amp-env-release-display'),
+            ampEnvAttack: document.getElementById('amp-env-attack'), ampEnvAttackDisplay: document.getElementById('amp-env-attack-display'), ampEnvDecay: document.getElementById('amp-env-decay'), ampEnvDecayDisplay: document.getElementById('amp-env-decay-display'), ampEnvSustain: document.getElementById('amp-env-sustain'), ampEnvSustainDisplay: document.getElementById('amp-env-sustain-display'), ampEnvRelease: document.getElementById('amp-env-release'), ampEnvReleaseDisplay: document.getElementById('amp-env-release-display'),
             filterType: document.getElementById('filter-type'), filterCutoff: document.getElementById('filter-cutoff'), filterCutoffDisplay: document.getElementById('filter-cutoff-display'), filterResonance: document.getElementById('filter-resonance'), filterResonanceDisplay: document.getElementById('filter-resonance-display'), 
-            filterEnvAttack: document.getElementById('filter-env-attack'), filterEnvAttackDisplay: document.getElementById('filter-env-attack-display'),
-            filterEnvDecay: document.getElementById('filter-env-decay'), filterEnvDecayDisplay: document.getElementById('filter-env-decay-display'),
-            filterEnvSustain: document.getElementById('filter-env-sustain'), filterEnvSustainDisplay: document.getElementById('filter-env-sustain-display'),
-            filterEnvRelease: document.getElementById('filter-env-release'), filterEnvReleaseDisplay: document.getElementById('filter-env-release-display'),
-            filterEnvAmount: document.getElementById('filter-env-amount'), filterEnvAmountDisplay: document.getElementById('filter-env-amount-display'),
+            filterEnvAttack: document.getElementById('filter-env-attack'), filterEnvAttackDisplay: document.getElementById('filter-env-attack-display'), filterEnvDecay: document.getElementById('filter-env-decay'), filterEnvDecayDisplay: document.getElementById('filter-env-decay-display'), filterEnvSustain: document.getElementById('filter-env-sustain'), filterEnvSustainDisplay: document.getElementById('filter-env-sustain-display'), filterEnvRelease: document.getElementById('filter-env-release'), filterEnvReleaseDisplay: document.getElementById('filter-env-release-display'), filterEnvAmount: document.getElementById('filter-env-amount'), filterEnvAmountDisplay: document.getElementById('filter-env-amount-display'),
             lfo1Enable: document.getElementById('lfo1-enable'), lfo1Wave: document.getElementById('lfo1-wave'), lfo1Rate: document.getElementById('lfo1-rate'), lfo1RateDisplay: document.getElementById('lfo1-rate-display'), lfo1Depth: document.getElementById('lfo1-depth'), lfo1DepthDisplay: document.getElementById('lfo1-depth-display'), lfo1Destination: document.getElementById('lfo1-destination'),
             lfo1PulseWidthControls: document.getElementById('lfo1-pulse-width-controls'), lfo1PulseWidth: document.getElementById('lfo1-pulse-width'), lfo1PulseWidthDisplay: document.getElementById('lfo1-pulse-width-display'),
             lfo1PwmFreqControls: document.getElementById('lfo1-pwm-freq-controls'), lfo1PwmFreq: document.getElementById('lfo1-pwm-freq'), lfo1PwmFreqDisplay: document.getElementById('lfo1-pwm-freq-display'),
@@ -201,19 +177,86 @@
             delayEnable: document.getElementById('delay-enable'), delayTime: document.getElementById('delay-time'), delayTimeDisplay: document.getElementById('delay-time-display'), delayFeedback: document.getElementById('delay-feedback'), delayFeedbackDisplay: document.getElementById('delay-feedback-display'), delayWet: document.getElementById('delay-wet'), delayWetDisplay: document.getElementById('delay-wet-display'), 
             pingpongEnable: document.getElementById('pingpong-enable'), pingpongDelayTime: document.getElementById('pingpong-delay-time'), pingpongDelayTimeDisplay: document.getElementById('pingpong-delay-time-display'), pingpongFeedback: document.getElementById('pingpong-feedback'), pingpongFeedbackDisplay: document.getElementById('pingpong-feedback-display'), pingpongWet: document.getElementById('pingpong-wet'), pingpongWetDisplay: document.getElementById('pingpong-wet-display'),
             reverbEnable: document.getElementById('reverb-enable'), reverbDecay: document.getElementById('reverb-decay'), reverbDecayDisplay: document.getElementById('reverb-decay-display'), reverbWet: document.getElementById('reverb-wet'), reverbWetDisplay: document.getElementById('reverb-wet-display'), 
-            keyboard: document.getElementById('keyboard'), audioContextMessageOverlay: document.getElementById('audio-context-message-overlay'), startAudioButton: document.getElementById('start-audio-button'), midiStatus: document.getElementById('midi-status')
+            keyboard: document.getElementById('keyboard'), audioContextMessageOverlay: document.getElementById('audio-context-message-overlay'), startAudioButton: document.getElementById('start-audio-button'), 
+            midiStatus: document.getElementById('midi-status'), midiLearnButton: document.getElementById('midi-learn-button'), midiLearnStatus: document.getElementById('midi-learn-status')
         };
         
         for (const key in dom) { if (dom[key] === null) { console.error(`CRITICAL DOM ERROR: Element for dom.${key} not found!`); }}
 
+        // Define all controllable parameters for MIDI Learn
+        const paramDefinitions = {
+            // OSC
+            'oscType': { elementId: 'osc-type', label: 'Osc Type', type: 'select', options: Array.from(dom.oscType.options).map(opt => opt.value), eventToDispatch: 'change' },
+            'pwmSpeed': { elementId: 'pwm-speed', label: 'PWM Speed', type: 'range', min: 0.1, max: 20, eventToDispatch: 'input'},
+            'fmHarmonicity': { elementId: 'fm-harmonicity', label: 'FM Harm', type: 'range', min: 0.1, max: 10, eventToDispatch: 'input'},
+            'fmModIndex': { elementId: 'fm-mod-index', label: 'FM Index', type: 'range', min: 1, max: 50, eventToDispatch: 'input'},
+            'supersawCount': { elementId: 'supersaw-count', label: 'Saw Count', type: 'range', min: 2, max: 10, eventToDispatch: 'input'},
+            'supersawSpread': { elementId: 'supersaw-spread', label: 'Saw Spread', type: 'range', min: 0, max: 100, eventToDispatch: 'input'},
+            'resonantBodyHarmonicity': { elementId: 'resonantbody-harmonicity', label: 'Reso Harm', type: 'range', min: 0.1, max: 20, eventToDispatch: 'input'},
+            'resonantBodyModIndex': { elementId: 'resonantbody-mod-index', label: 'Reso Index', type: 'range', min: 1, max: 100, eventToDispatch: 'input'},
+            'formantVoiceHarmonicity': { elementId: 'formantvoice-harmonicity', label: 'Formant Harm', type: 'range', min: 0.1, max: 5, eventToDispatch: 'input'},
+            'formantVoiceModIndex': { elementId: 'formantvoice-mod-index', label: 'Formant Index', type: 'range', min: 1, max: 30, eventToDispatch: 'input'},
+            // AMP ENV & MASTER VOL
+            'masterVolume': { elementId: 'volume', label: 'Master Volume', type: 'range', min: -40, max: 0, eventToDispatch: 'input' },
+            'ampEnvAttack': { elementId: 'amp-env-attack', label: 'Amp Attack', type: 'range', min: 0.005, max: 2, eventToDispatch: 'input' },
+            'ampEnvDecay': { elementId: 'amp-env-decay', label: 'Amp Decay', type: 'range', min: 0.01, max: 2, eventToDispatch: 'input' },
+            'ampEnvSustain': { elementId: 'amp-env-sustain', label: 'Amp Sustain', type: 'range', min: 0, max: 1, eventToDispatch: 'input' },
+            'ampEnvRelease': { elementId: 'amp-env-release', label: 'Amp Release', type: 'range', min: 0.01, max: 5, eventToDispatch: 'input' },
+            // FILTER & FILTER ENV
+            'filterType': { elementId: 'filter-type', label: 'Filter Type', type: 'select', options: Array.from(dom.filterType.options).map(opt => opt.value), eventToDispatch: 'change' },
+            'filterCutoff': { elementId: 'filter-cutoff', label: 'Filter Cutoff', type: 'range', min: 20, max: 20000, eventToDispatch: 'input' },
+            'filterResonance': { elementId: 'filter-resonance', label: 'Filter Reso', type: 'range', min: 0.1, max: 30, eventToDispatch: 'input' },
+            'filterEnvAttack': { elementId: 'filter-env-attack', label: 'Filt Env Attack', type: 'range', min: 0.005, max: 2, eventToDispatch: 'input' },
+            'filterEnvDecay': { elementId: 'filter-env-decay', label: 'Filt Env Decay', type: 'range', min: 0.01, max: 2, eventToDispatch: 'input' },
+            'filterEnvSustain': { elementId: 'filter-env-sustain', label: 'Filt Env Sustain', type: 'range', min: 0, max: 1, eventToDispatch: 'input' },
+            'filterEnvRelease': { elementId: 'filter-env-release', label: 'Filt Env Release', type: 'range', min: 0.01, max: 5, eventToDispatch: 'input' },
+            'filterEnvAmount': { elementId: 'filter-env-amount', label: 'Filt Env Amt', type: 'range', min: -7, max: 7, eventToDispatch: 'input' },
+            // LFO1
+            'lfo1Enable': { elementId: 'lfo1-enable', label: 'LFO1 Enable', type: 'checkbox', eventToDispatch: 'change' },
+            'lfo1Wave': { elementId: 'lfo1-wave', label: 'LFO1 Wave', type: 'select', options: Array.from(dom.lfo1Wave.options).map(opt => opt.value), eventToDispatch: 'change' },
+            'lfo1PulseWidth': { elementId: 'lfo1-pulse-width', label: 'LFO1 Pulse Width', type: 'range', min:0.01, max:0.99, eventToDispatch: 'input'},
+            'lfo1PwmFreq': { elementId: 'lfo1-pwm-freq', label: 'LFO1 PWM Freq', type: 'range', min:0.1, max:20, eventToDispatch: 'input'},
+            'lfo1Rate': { elementId: 'lfo1-rate', label: 'LFO1 Rate', type: 'range', min: 0.1, max: 30, eventToDispatch: 'input' },
+            'lfo1Depth': { elementId: 'lfo1-depth', label: 'LFO1 Depth', type: 'range', min: 0, max: 1, eventToDispatch: 'input' },
+            'lfo1Destination': { elementId: 'lfo1-destination', label: 'LFO1 Dest', type: 'select', options: Array.from(dom.lfo1Destination.options).map(opt => opt.value), eventToDispatch: 'change' },
+            // EFFECTS
+            'distEnable': { elementId: 'dist-enable', label: 'Distortion Enable', type: 'checkbox', eventToDispatch: 'change'},
+            'distAmount': { elementId: 'dist-amount', label: 'Distortion Amt', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+            'distWet': { elementId: 'dist-wet', label: 'Distortion Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+            'crusherEnable': { elementId: 'crusher-enable', label: 'BitCrush Enable', type: 'checkbox', eventToDispatch: 'change'},
+            'crusherBits': { elementId: 'crusher-bits', label: 'BitCrush Bits', type: 'range', min:1, max:16, eventToDispatch: 'input'},
+            'crusherWet': { elementId: 'crusher-wet', label: 'BitCrush Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+            'chorusEnable': { elementId: 'chorus-enable', label: 'Chorus Enable', type: 'checkbox', eventToDispatch: 'change'},
+            'chorusRate': { elementId: 'chorus-rate', label: 'Chorus Rate', type: 'range', min:0.1, max:8, eventToDispatch: 'input'},
+            'chorusDepth': { elementId: 'chorus-depth', label: 'Chorus Depth', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+            'chorusFeedback': { elementId: 'chorus-feedback', label: 'Chorus Fbk', type: 'range', min:0, max:0.9, eventToDispatch: 'input'},
+            'chorusWet': { elementId: 'chorus-wet', label: 'Chorus Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+            'phaserEnable': { elementId: 'phaser-enable', label: 'Phaser Enable', type: 'checkbox', eventToDispatch: 'change'},
+            'phaserFrequency': { elementId: 'phaser-frequency', label: 'Phaser Freq', type: 'range', min:0.1, max:10, eventToDispatch: 'input'},
+            'phaserOctaves': { elementId: 'phaser-octaves', label: 'Phaser Octs', type: 'range', min:1, max:8, eventToDispatch: 'input'},
+            'phaserBaseFreq': { elementId: 'phaser-base-freq', label: 'Phaser Base', type: 'range', min:100, max:1500, eventToDispatch: 'input'},
+            'phaserWet': { elementId: 'phaser-wet', label: 'Phaser Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+            'delayEnable': { elementId: 'delay-enable', label: 'Delay Enable', type: 'checkbox', eventToDispatch: 'change'},
+            'delayTime': { elementId: 'delay-time', label: 'Delay Time', type: 'range', min:0.01, max:1, eventToDispatch: 'input'},
+            'delayFeedback': { elementId: 'delay-feedback', label: 'Delay Fbk', type: 'range', min:0, max:0.9, eventToDispatch: 'input'},
+            'delayWet': { elementId: 'delay-wet', label: 'Delay Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+            'pingpongEnable': { elementId: 'pingpong-enable', label: 'PingPong Enable', type: 'checkbox', eventToDispatch: 'change'},
+            'pingpongDelayTime': { elementId: 'pingpong-delay-time', label: 'PP Delay Time', type: 'range', min:0.01, max:1, eventToDispatch: 'input'},
+            'pingpongFeedback': { elementId: 'pingpong-feedback', label: 'PP Delay Fbk', type: 'range', min:0, max:0.9, eventToDispatch: 'input'},
+            'pingpongWet': { elementId: 'pingpong-wet', label: 'PP Delay Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+            'reverbEnable': { elementId: 'reverb-enable', label: 'Reverb Enable', type: 'checkbox', eventToDispatch: 'change'},
+            'reverbDecay': { elementId: 'reverb-decay', label: 'Reverb Decay', type: 'range', min:0.1, max:10, eventToDispatch: 'input'},
+            'reverbWet': { elementId: 'reverb-wet', label: 'Reverb Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
+        };
+        
         const notesLayout = [ { name: 'C', freqName: 'C', type: 'white' }, { name: 'C#', freqName: 'C#', type: 'black' },{ name: 'D', freqName: 'D', type: 'white' }, { name: 'D#', freqName: 'D#', type: 'black' },{ name: 'E', freqName: 'E', type: 'white' }, { name: 'F', freqName: 'F', type: 'white' },{ name: 'F#', freqName: 'F#', type: 'black' }, { name: 'G', freqName: 'G', type: 'white' },{ name: 'G#', freqName: 'G#', type: 'black' }, { name: 'A', freqName: 'A', type: 'white' },{ name: 'A#', freqName: 'A#', type: 'black' }, { name: 'B', freqName: 'B', type: 'white' } ];
         const noteNamesSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
         const pressedComputerKeys = new Set();
-        const computerKeyNoteMapping = { 'a': 'C', 's': 'D', 'd': 'E', 'f': 'F', 'g': 'G', 'h': 'A', 'j': 'B', 'w': 'C#', 'e': 'D#', 't': 'F#', 'y': 'G#', 'u': 'A#'}; // k removed
+        const computerKeyNoteMapping = { 'a': 'C', 's': 'D', 'd': 'E', 'f': 'F', 'g': 'G', 'h': 'A', 'j': 'B', 'w': 'C#', 'e': 'D#', 't': 'F#', 'y': 'G#', 'u': 'A#'};
         let midiAccess = null;
 
-        function showMessage(overlayElem, message, buttonText, callback) { console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
-        function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
+        function showMessage(overlayElem, message, buttonText, callback) { /* ... (same) ... */ console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
+        function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { /* ... (same) ... */ if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
 
         async function initializeAudio() {
             console.log("AUDIO_INIT: Starting. Tone.context.state:", Tone.context.state);
@@ -261,6 +304,7 @@
                         console.log("AUDIO_INIT: TEST SOUND (C4) triggered.");
                     } else { console.warn("AUDIO_INIT: TEST SOUND NOT TRIGGERED."); }
                     await initializeMIDI();
+                    loadMidiMappings(); // Load mappings on init
                 } catch (error) { console.error("AUDIO_INIT_ERROR: Creating nodes failed:", error); showMessage(dom.audioContextMessageOverlay, "Synth creation error.", "Close", () => {}); return false; }
             } else {  
                 console.log("AUDIO_INIT: Synth exists. Re-applying settings."); 
@@ -368,7 +412,7 @@
             }
         }
         
-        function applyAudioChain() { /* ... (same as before - mainFilter removed from chain directly) ... */ if (!synth || !tremoloEffect || !distortionEffect || !bitCrusherEffect || /*!mainFilter ||*/ !chorusEffect || !phaserEffect || !delayEffect || !pingPongDelayEffect || !reverbEffect ) { console.warn("APPLY_CHAIN_WARN: Core audio node(s) not ready."); return; } console.log("APPLY_CHAIN: Rebuilding audio chain..."); const allNodesInChain = [synth, tremoloEffect, distortionEffect, bitCrusherEffect, /*mainFilter,*/ chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect]; allNodesInChain.forEach(node => { try { node.disconnect(); } catch(e) {} }); let currentNode = synth; currentNode.connect(tremoloEffect); currentNode = tremoloEffect; if (dom.distEnable.checked && parseFloat(dom.distWet.value) > 0) { distortionEffect.wet.value = parseFloat(dom.distWet.value); currentNode.connect(distortionEffect); currentNode = distortionEffect; } else { distortionEffect.wet.value = 0; } if (dom.crusherEnable.checked && parseFloat(dom.crusherWet.value) > 0) { bitCrusherEffect.wet.value = parseFloat(dom.crusherWet.value); currentNode.connect(bitCrusherEffect); currentNode = bitCrusherEffect; } else { bitCrusherEffect.wet.value = 0; }  /* Filter is per-voice, not in master chain */ if (dom.chorusEnable.checked && parseFloat(dom.chorusWet.value) > 0) { chorusEffect.wet.value = parseFloat(dom.chorusWet.value); currentNode.connect(chorusEffect); currentNode = chorusEffect; } else { chorusEffect.wet.value = 0; } if (dom.phaserEnable.checked && parseFloat(dom.phaserWet.value) > 0) { phaserEffect.wet.value = parseFloat(dom.phaserWet.value); currentNode.connect(phaserEffect); currentNode = phaserEffect; } else { phaserEffect.wet.value = 0; } if (dom.delayEnable.checked && parseFloat(dom.delayWet.value) > 0) { delayEffect.wet.value = parseFloat(dom.delayWet.value); currentNode.connect(delayEffect); currentNode = delayEffect; } else { delayEffect.wet.value = 0; } if (dom.pingpongEnable.checked && parseFloat(dom.pingpongWet.value) > 0) { pingPongDelayEffect.wet.value = parseFloat(dom.pingpongWet.value); currentNode.connect(pingPongDelayEffect); currentNode = pingPongDelayEffect; } else { pingPongDelayEffect.wet.value = 0; } if (dom.reverbEnable.checked && parseFloat(dom.reverbWet.value) > 0) { reverbEffect.wet.value = parseFloat(dom.reverbWet.value); currentNode.connect(reverbEffect); currentNode = reverbEffect; } else { reverbEffect.wet.value = 0; } currentNode.toDestination(); console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); }
+        function applyAudioChain() { /* ... (same as before) ... */ if (!synth || !tremoloEffect || !distortionEffect || !bitCrusherEffect || /*!mainFilter ||*/ !chorusEffect || !phaserEffect || !delayEffect || !pingPongDelayEffect || !reverbEffect ) { console.warn("APPLY_CHAIN_WARN: Core audio node(s) not ready."); return; } console.log("APPLY_CHAIN: Rebuilding audio chain..."); const allNodesInChain = [synth, tremoloEffect, distortionEffect, bitCrusherEffect, /*mainFilter,*/ chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect]; allNodesInChain.forEach(node => { try { node.disconnect(); } catch(e) {} }); let currentNode = synth; currentNode.connect(tremoloEffect); currentNode = tremoloEffect; if (dom.distEnable.checked && parseFloat(dom.distWet.value) > 0) { distortionEffect.wet.value = parseFloat(dom.distWet.value); currentNode.connect(distortionEffect); currentNode = distortionEffect; } else { distortionEffect.wet.value = 0; } if (dom.crusherEnable.checked && parseFloat(dom.crusherWet.value) > 0) { bitCrusherEffect.wet.value = parseFloat(dom.crusherWet.value); currentNode.connect(bitCrusherEffect); currentNode = bitCrusherEffect; } else { bitCrusherEffect.wet.value = 0; }  /* Filter is per-voice, not in master chain */ if (dom.chorusEnable.checked && parseFloat(dom.chorusWet.value) > 0) { chorusEffect.wet.value = parseFloat(dom.chorusWet.value); currentNode.connect(chorusEffect); currentNode = chorusEffect; } else { chorusEffect.wet.value = 0; } if (dom.phaserEnable.checked && parseFloat(dom.phaserWet.value) > 0) { phaserEffect.wet.value = parseFloat(dom.phaserWet.value); currentNode.connect(phaserEffect); currentNode = phaserEffect; } else { phaserEffect.wet.value = 0; } if (dom.delayEnable.checked && parseFloat(dom.delayWet.value) > 0) { delayEffect.wet.value = parseFloat(dom.delayWet.value); currentNode.connect(delayEffect); currentNode = delayEffect; } else { delayEffect.wet.value = 0; } if (dom.pingpongEnable.checked && parseFloat(dom.pingpongWet.value) > 0) { pingPongDelayEffect.wet.value = parseFloat(dom.pingpongWet.value); currentNode.connect(pingPongDelayEffect); currentNode = pingPongDelayEffect; } else { pingPongDelayEffect.wet.value = 0; } if (dom.reverbEnable.checked && parseFloat(dom.reverbWet.value) > 0) { reverbEffect.wet.value = parseFloat(dom.reverbWet.value); currentNode.connect(reverbEffect); currentNode = reverbEffect; } else { reverbEffect.wet.value = 0; } currentNode.toDestination(); console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); }
         function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune); break; case 'filterCutoff': if (dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); console.log("LFO_CONN_DEBUG: LFO connected to synth.filterEnvelope.baseFrequency"); } else { console.log("LFO to Filter: No active filter or filter envelope to modulate on synth voices for LFO.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
         function createOnScreenKeyboard() { dom.keyboard.innerHTML = ''; let currentWhiteKeyOffset = 0; const whiteKeyWidth = 38; const blackKeyWidth = 26; for (let oct = 0; oct < 2; oct++) { notesLayout.forEach((noteLayout) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${noteLayout.freqName}${currentKeyOctave}`; keyElement.textContent = noteLayout.name; if (noteLayout.type === 'white') { keyElement.classList.add('white-key'); keyElement.style.left = `${currentWhiteKeyOffset}px`; dom.keyboard.appendChild(keyElement); currentWhiteKeyOffset += whiteKeyWidth; } else { keyElement.classList.add('black-key'); keyElement.style.left = `${currentWhiteKeyOffset - (whiteKeyWidth/2)}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } }
         function updateKeyVisualState(fullNoteName, isActive) { /* ... (same) ... */ const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.fullNote === fullNoteName) { key.classList.toggle('active', isActive); } }); }
@@ -379,12 +423,161 @@
         async function initializeMIDI() { /* ... (same - includes updated error messages) ... */ dom.midiStatus.textContent = "Accessing MIDI..."; if (navigator.requestMIDIAccess) { try { midiAccess = await navigator.requestMIDIAccess({ sysex: false }); dom.midiStatus.textContent = "MIDI Granted. Listening..."; startMIDIListening(); } catch (e) { let specificAdvice = ""; if (e.message && e.message.toLowerCase().includes("permission add-on")) { specificAdvice = " This error often appears in Firefox if MIDI permissions are not set or an add-on like Jazz-MIDI is needed and not configured. Please check your browser's site permissions for MIDI and ensure any required MIDI extensions are active."; } else if (e.name === "SecurityError") { specificAdvice = " MIDI access was denied by a security policy. This can happen if the page is not served over HTTPS, or if MIDI is disabled in browser settings/permissions."; } else { specificAdvice = " Please ensure your MIDI device is connected and check your browser's MIDI settings and site permissions."; } dom.midiStatus.textContent = `MIDI Access Error.${specificAdvice}`; console.error("Could not access MIDI devices:", e.name, e.message, specificAdvice); } } else { dom.midiStatus.textContent = "Web MIDI API not supported in this browser. Use Chrome/Edge for MIDI."; console.warn("Web MIDI API not supported in this browser!"); } }
         function startMIDIListening() { /* ... (same) ... */ if (!midiAccess) return; const inputs = midiAccess.inputs.values(); let deviceFound = false; for (let input = inputs.next(); input && !input.done; input = inputs.next()) { deviceFound = true; input.value.onmidimessage = onMIDIMessage; } if(deviceFound) dom.midiStatus.textContent = "Listening to MIDI devices."; else dom.midiStatus.textContent = "No MIDI inputs found."; midiAccess.onstatechange = (event) => { dom.midiStatus.textContent = `MIDI: ${event.port.name} ${event.port.state}. Re-scan...`; startMIDIListening(); }; }
         function midiNoteToNoteNameAndOctave(midiNote) { /* ... (same) ... */ const noteIndex = midiNote % 12; const octave = Math.floor(midiNote / 12) - 1; return `${noteNamesSharp[noteIndex]}${octave}`; }
-        function onMIDIMessage(message) { /* ... (same) ... */ if (!synth) return; const [command, note, velocity] = message.data; const noteNameFull = midiNoteToNoteNameAndOctave(note); const scaledVelocity = velocity / 127; if ((command & 0xF0) === 0x90 && velocity > 0) { playNote(noteNameFull, scaledVelocity); } else if ((command & 0xF0) === 0x80 || ((command & 0xF0) === 0x90 && velocity === 0)) { releaseNote(noteNameFull); } }
         
+        function onMIDIMessage(message) {
+            if (!synth) return;
+            const [command, data1, data2] = message.data;
+            const type = command & 0xF0; // Mask out channel
+            const channel = command & 0x0F;
+
+            if (isGlobalMidiLearnActive && paramKeyToLearn && type === 0xB0) { // CC message
+                const ccNumber = data1;
+                const currentParamDef = paramDefinitions[paramKeyToLearn];
+                midiMappings[ccNumber] = paramKeyToLearn;
+                saveMidiMappings();
+                console.log(`MIDI LEARN: Mapped CC ${ccNumber} to ${currentParamDef.label}`);
+                dom.midiLearnStatus.textContent = `Learned: CC ${ccNumber} -> ${currentParamDef.label}`;
+                isGlobalMidiLearnActive = false;
+                paramKeyToLearn = null;
+                dom.midiLearnButton.textContent = "MIDI Learn";
+                dom.midiLearnButton.classList.remove('learn-active');
+                setTimeout(() => { dom.midiLearnStatus.textContent = ""; }, 2000);
+            } else if (!isGlobalMidiLearnActive && type === 0xB0) { // CC message during normal operation
+                const ccNumber = data1;
+                const ccValue = data2;
+                const mappedParamKey = midiMappings[ccNumber];
+                if (mappedParamKey) {
+                    updateParamFromMidiCC(mappedParamKey, ccValue);
+                }
+            } else if ((type === 0x90 && data2 > 0)) { // Note On
+                const noteNameFull = midiNoteToNoteNameAndOctave(data1);
+                const scaledVelocity = data2 / 127;
+                playNote(noteNameFull, scaledVelocity);
+            } else if (type === 0x80 || (type === 0x90 && data2 === 0)) { // Note Off
+                const noteNameFull = midiNoteToNoteNameAndOctave(data1);
+                releaseNote(noteNameFull);
+            }
+        }
+
+        function updateParamFromMidiCC(paramKey, ccValue) {
+            const paramDef = paramDefinitions[paramKey];
+            if (!paramDef) {
+                console.warn(`MIDI CC: No parameter definition for key ${paramKey}`);
+                return;
+            }
+            const element = dom[paramDef.elementId]; // Use the direct ID from paramDef
+            if (!element) {
+                console.warn(`MIDI CC: Element with ID ${paramDef.elementId} not found for param ${paramKey}`);
+                return;
+            }
+
+            let normalizedValue;
+            if (paramDef.type === 'range') {
+                const min = paramDef.min;
+                const max = paramDef.max;
+                normalizedValue = (ccValue / 127) * (max - min) + min;
+                element.value = normalizedValue;
+            } else if (paramDef.type === 'checkbox') {
+                normalizedValue = ccValue >= 64;
+                element.checked = normalizedValue;
+            } else if (paramDef.type === 'select') {
+                const optionCount = paramDef.options.length;
+                const optionIndex = Math.floor((ccValue / 127) * (optionCount -1)); // -1 because index is 0-based
+                normalizedValue = paramDef.options[Math.max(0, Math.min(optionIndex, optionCount - 1))]; // Clamp index
+                element.value = normalizedValue;
+            }
+
+            // console.log(`MIDI CC: Updating ${paramKey} (${paramDef.elementId}) to ${normalizedValue} from CC ${ccValue}`);
+            element.dispatchEvent(new Event(paramDef.eventToDispatch, { bubbles: true }));
+        }
+
+        function toggleGlobalMidiLearnMode() {
+            isGlobalMidiLearnActive = !isGlobalMidiLearnActive;
+            if (isGlobalMidiLearnActive) {
+                dom.midiLearnButton.textContent = "Learning... Click a Control";
+                dom.midiLearnButton.classList.add('learn-active');
+                dom.midiLearnStatus.textContent = "Click a synth control to map it.";
+                paramKeyToLearn = null; // Clear previous target
+            } else {
+                dom.midiLearnButton.textContent = "MIDI Learn";
+                dom.midiLearnButton.classList.remove('learn-active');
+                dom.midiLearnStatus.textContent = paramKeyToLearn ? `Cancelled learn for ${paramDefinitions[paramKeyToLearn]?.label || 'Unknown'}` : "";
+                paramKeyToLearn = null;
+                setTimeout(() => { if(!isGlobalMidiLearnActive) dom.midiLearnStatus.textContent = ""; }, 2000);
+            }
+        }
+
+        function setupMidiLearnForElement(paramKey) {
+            if (!isGlobalMidiLearnActive) return; // Only proceed if global learn is active
+            paramKeyToLearn = paramKey;
+            const paramDef = paramDefinitions[paramKey];
+            dom.midiLearnButton.textContent = `Listening for CC... (${paramDef.label})`;
+            dom.midiLearnStatus.textContent = `Move MIDI control for: ${paramDef.label}`;
+            console.log(`MIDI LEARN: Waiting for CC for parameter: ${paramDef.label} (Key: ${paramKey})`);
+        }
+        
+        function saveMidiMappings() {
+            try {
+                localStorage.setItem('syn7h_midiMappings', JSON.stringify(midiMappings));
+                console.log("MIDI Mappings saved.");
+            } catch (e) {
+                console.error("Error saving MIDI mappings to localStorage:", e);
+            }
+        }
+
+        function loadMidiMappings() {
+            try {
+                const savedMappings = localStorage.getItem('syn7h_midiMappings');
+                if (savedMappings) {
+                    midiMappings = JSON.parse(savedMappings);
+                    console.log("MIDI Mappings loaded:", midiMappings);
+                } else {
+                    midiMappings = {};
+                    console.log("No saved MIDI mappings found.");
+                }
+            } catch (e) {
+                console.error("Error loading MIDI mappings from localStorage:", e);
+                midiMappings = {};
+            }
+        }
+
+
         // --- UI Control Event Listeners ---
         dom.startAudioButton.addEventListener('click', async (e) => { e.target.blur(); dom.audioContextMessageOverlay.classList.remove('visible'); const success = await initializeAudio(); if(success) console.log("Audio init OK from Start."); else console.error("Audio init FAILED from Start."); });
+        
+        dom.midiLearnButton.addEventListener('click', (e) => { toggleGlobalMidiLearnMode(); e.target.blur(); });
+
+        Object.keys(paramDefinitions).forEach(paramKey => {
+            const definition = paramDefinitions[paramKey];
+            const element = dom[definition.elementId]; // Use the direct elementId from the definition map
+            if (element) {
+                // Listener to set this parameter as the one to learn
+                element.addEventListener('focus', () => { // 'focus' might be better for sliders than 'mousedown'
+                    if (isGlobalMidiLearnActive && !paramKeyToLearn) { // Only if no param is currently being learned
+                        setupMidiLearnForElement(paramKey);
+                    }
+                });
+                 element.addEventListener('mousedown', () => { // For sliders, mousedown might be better than focus
+                    if (isGlobalMidiLearnActive && !paramKeyToLearn && definition.type === 'range') {
+                        setupMidiLearnForElement(paramKey);
+                    }
+                });
+                 element.addEventListener('change', (e) => { // For select and checkbox
+                    if (isGlobalMidiLearnActive && !paramKeyToLearn && (definition.type === 'select' || definition.type === 'checkbox')) {
+                        setupMidiLearnForElement(paramKey);
+                    }
+                    e.target.blur(); // Blur after any manual change
+                });
+                element.addEventListener('input', (e) => { // For range sliders, blur on input event too
+                     if (definition.type === 'range') e.target.blur();
+                });
+            } else {
+                console.warn(`MIDI Learn Setup: Element ID '${definition.elementId}' for param '${paramKey}' not found in dom object.`);
+            }
+        });
+
+
         dom.oscType.addEventListener('change', (e) => { updateOscillatorType(); e.target.blur(); });
-        // Osc params
         const oscParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); e.target.blur(); };
         dom.pwmSpeed.addEventListener('input', (e) => { updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); oscParamHandler(e); });
         dom.fmHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); oscParamHandler(e);});
@@ -396,7 +589,6 @@
         dom.formantVoiceHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); oscParamHandler(e); });
         dom.formantVoiceModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0); oscParamHandler(e); });
 
-        // Amplitude Env & Volume
         function updateVolumeAndEnvelopes(event) { applyCurrentOscillatorSpecificSettings(dom.oscType.value); if(event && event.target) event.target.blur(); } 
         dom.volume.addEventListener('input', (e) => {updateSliderDisplay(dom.volume, dom.volumeDisplay, 'dB',0); updateVolumeAndEnvelopes(e);});
         dom.ampEnvAttack.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvAttack, dom.ampEnvAttackDisplay, 's', 3); updateVolumeAndEnvelopes(e); });
@@ -404,8 +596,7 @@
         dom.ampEnvSustain.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvSustain, dom.ampEnvSustainDisplay, '', 2); updateVolumeAndEnvelopes(e); });
         dom.ampEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvRelease, dom.ampEnvReleaseDisplay, 's', 2); updateVolumeAndEnvelopes(e); });
 
-        // Filter Env & Params
-        dom.filterType.addEventListener('change', (e) => {applyCurrentOscillatorSpecificSettings(dom.oscType.value); /*applyAudioChain();*/ e.target.blur(); });
+        dom.filterType.addEventListener('change', (e) => {applyCurrentOscillatorSpecificSettings(dom.oscType.value); e.target.blur(); });
         const filterParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); e.target.blur(); };
         dom.filterCutoff.addEventListener('input', (e) => { updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); filterParamHandler(e); });
         dom.filterResonance.addEventListener('input', (e) => { updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q'); filterParamHandler(e); });
@@ -415,7 +606,6 @@
         dom.filterEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvRelease, dom.filterEnvReleaseDisplay, 's', 2); filterParamHandler(e); });
         dom.filterEnvAmount.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvAmount, dom.filterEnvAmountDisplay, ' oct', 1); filterParamHandler(e); });
 
-        // LFO Listeners
         const lfoUpdateHandler = (e) => { updateLFO1Connections(); e.target.blur(); };
         dom.lfo1Enable.addEventListener('change', lfoUpdateHandler); 
         dom.lfo1Wave.addEventListener('change', lfoUpdateHandler); 
@@ -425,10 +615,9 @@
         dom.lfo1Depth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2); lfoUpdateHandler(e); });
         dom.lfo1Destination.addEventListener('change', lfoUpdateHandler);
 
-        // Effect Control Listeners
         const effectToggleHandler = (e) => { applyAudioChain(); e.target.blur(); };
         const effectWetHandler = (slider, display, unit, decimals, e) => { updateSliderDisplay(slider, display, unit, decimals); applyAudioChain(); e.target.blur(); };
-        const effectParamHandler = (slider, display, unit, decimals, effectNode, paramName, e) => { updateSliderDisplay(slider, display, unit, decimals); if(effectNode) effectNode[paramName] = parseFloat(slider.value); e.target.blur(); };
+        const effectParamHandler = (slider, display, unit, decimals, effectNode, paramName, e) => { updateSliderDisplay(slider, display, unit, decimals); if(effectNode && effectNode[paramName] !== undefined) { if(effectNode[paramName].value !== undefined) {effectNode[paramName].value = parseFloat(slider.value); } else {effectNode[paramName] = parseFloat(slider.value);} } e.target.blur(); };
         
         dom.distEnable.addEventListener('change', effectToggleHandler); 
         dom.distAmount.addEventListener('input', (e) => effectParamHandler(dom.distAmount, dom.distAmountDisplay, '', 2, distortionEffect, 'distortion', e)); 
