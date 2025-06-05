@@ -175,7 +175,7 @@
 
 
         // --- DOM Element Grabbing (Centralized) ---
-        const dom = {
+        const dom = { /* ... (all previous dom elements PLUS ringmod and granular) ... */
             oscType: document.getElementById('osc-type'), pwmControls: document.getElementById('pwm-controls'), pwmSpeed: document.getElementById('pwm-speed'), pwmSpeedDisplay: document.getElementById('pwm-speed-display'), fmControls: document.getElementById('fm-controls'), fmHarmonicity: document.getElementById('fm-harmonicity'), fmHarmonicityDisplay: document.getElementById('fm-harmonicity-display'), fmModIndex: document.getElementById('fm-mod-index'), fmModIndexDisplay: document.getElementById('fm-mod-index-display'), 
             supersawControls: document.getElementById('supersaw-controls'), supersawCount: document.getElementById('supersaw-count'), supersawCountDisplay: document.getElementById('supersaw-count-display'), supersawSpread: document.getElementById('supersaw-spread'), supersawSpreadDisplay: document.getElementById('supersaw-spread-display'),
             resonantBodyControls: document.getElementById('resonantbody-controls'), resonantBodyHarmonicity: document.getElementById('resonantbody-harmonicity'), resonantBodyHarmonicityDisplay: document.getElementById('resonantbody-harmonicity-display'), resonantBodyModIndex: document.getElementById('resonantbody-mod-index'), resonantBodyModIndexDisplay: document.getElementById('resonantbody-mod-index-display'),
@@ -263,6 +263,19 @@
 
         function showMessage(overlayElem, message, buttonText, callback) { /* ... (same) ... */ console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
         function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { /* ... (same) ... */ if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
+        
+        function releaseAndRefocus(event) {
+            if (event && event.target && typeof event.target.blur === 'function') {
+                event.target.blur();
+            }
+            // Ensure the body is focusable for this to work reliably across browsers
+            if (document.body.tabIndex === -1) { 
+                setTimeout(() => {
+                    document.body.focus();
+                }, 0); 
+            }
+        }
+
 
         async function initializeAudio() {
             console.log("AUDIO_INIT: Starting. Tone.context.state:", Tone.context.state);
@@ -302,9 +315,6 @@
             
             updateOscillatorType(); 
             
-            applyAudioChain(); 
-            updateLFO1Connections(); 
-
             console.log(`AUDIO_INIT: PRE-TEST_SOUND. Tone.context.state: ${Tone.context.state}. Synth exists: ${!!synth}. Synth type: ${currentActiveSynthType}`);
             if (synth && Tone.context.state === 'running' && currentActiveSynthType !== 'GrainPlayer') { 
                 synth.triggerAttackRelease("C4", "8n", Tone.now() + 0.1); 
@@ -351,6 +361,7 @@
                     synth.dispose(); 
                     synth = null;
                 }
+                // Recreate LFO gain nodes as their connection to synth.detune or filterEnvelope might be invalidated
                 if(lfo1ToDetuneGain) { lfo1ToDetuneGain.dispose(); lfo1ToDetuneGain = new Tone.Multiply(0); }
                 if(lfo1ToFilterFreqGain) { lfo1ToFilterFreqGain.dispose(); lfo1ToFilterFreqGain = new Tone.Multiply(0); }
 
@@ -364,9 +375,10 @@
                     } else {
                         dom.midiLearnStatus.textContent = "Load WAV for Granular";
                         console.warn("UPDATE_OSC_TYPE: GrainPlayer created, but needs a buffer. Load a WAV file.");
+                        // synth remains a GrainPlayer instance, but synth.loaded will be false.
                     }
                 } else { 
-                    currentActiveSynthType = 'MonoSynth'; 
+                    currentActiveSynthType = 'MonoSynth'; // Ensure this is correct before creating PolySynth
                     synth = new Tone.PolySynth(Tone.MonoSynth); 
                     console.log("UPDATE_OSC_TYPE: New PolySynth(MonoSynth) created.");
                 }
@@ -377,10 +389,12 @@
             }
             
             if (synth) { 
-                 applyCurrentOscillatorSpecificSettings(newSelectedOscType);
-                 applyAudioChain(); 
-                 updateLFO1Connections();
+                 applyCurrentOscillatorSpecificSettings(newSelectedOscType); // Apply settings for new/existing synth
+                 applyAudioChain(); // Rebuild the audio chain with the potentially new synth
+                 updateLFO1Connections(); // Re-establish LFO connections
             } else if (newActiveSynthType === 'GrainPlayer' && !grainPlayerBuffer) {
+                // If granular is selected and no buffer, synth will be null.
+                // We still might want to apply the audio chain with synth as null to ensure effects are disconnected from any old synth.
                 applyAudioChain(); 
             }
         }
@@ -415,8 +429,8 @@
                 catch(e) { console.error("APPLY_OSC_SETTINGS_ERROR: Failed to set options for MonoSynth based PolySynth", selectedOscType, settingsForSynthSet, e); }
             } else if (currentActiveSynthType === 'GrainPlayer' && selectedOscType === 'granular' && synth && synth.loaded) {
                 synth.loop = dom.granularLoop.checked;
-                synth.loopStart = parseFloat(dom.granularLoopStart.value); 
-                synth.loopEnd = parseFloat(dom.granularLoopEnd.value);   
+                synth.loopStart = parseFloat(dom.granularLoopStart.value); // Already normalized 0-1 from slider
+                synth.loopEnd = parseFloat(dom.granularLoopEnd.value);   // Already normalized 0-1 from slider
                 synth.reverse = dom.granularReverse.checked;
                 synth.grainSize = parseFloat(dom.granularGrainSize.value);
                 synth.overlap = parseFloat(dom.granularOverlap.value);
@@ -454,15 +468,14 @@
         function createOnScreenKeyboard() { /* ... (same) ... */ dom.keyboard.innerHTML = ''; let currentWhiteKeyOffset = 0; const whiteKeyWidth = 38; const blackKeyWidth = 26; for (let oct = 0; oct < 2; oct++) { notesLayout.forEach((noteLayout) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${noteLayout.freqName}${currentKeyOctave}`; keyElement.textContent = noteLayout.name; if (noteLayout.type === 'white') { keyElement.classList.add('white-key'); keyElement.style.left = `${currentWhiteKeyOffset}px`; dom.keyboard.appendChild(keyElement); currentWhiteKeyOffset += whiteKeyWidth; } else { keyElement.classList.add('black-key'); keyElement.style.left = `${currentWhiteKeyOffset - (whiteKeyWidth/2)}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } }
         function updateKeyVisualState(fullNoteName, isActive) { /* ... (same) ... */ const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.fullNote === fullNoteName) { key.classList.toggle('active', isActive); } }); }
         function playNote(fullNoteName, velocity = 0.75) { 
-            if (!synth || Tone.context.state !== 'running') {
-                console.warn("PlayNote: Synth not ready or audio context not running. Synth:", synth, "Context state:", Tone.context.state);
+            if (!synth || (synth.disposed && !(synth instanceof Tone.GrainPlayer && synth.loaded === false) ) || Tone.context.state !== 'running') { // Allow synth to be GrainPlayer not yet loaded
+                console.warn("PlayNote: Synth not ready, disposed, or audio context not running. Synth:", synth, "Context state:", Tone.context.state);
                 return;
             }
-            console.log(`PLAY_NOTE_DEBUG: currentActiveSynthType = ${currentActiveSynthType}, synth is ${synth ? synth.constructor.name : 'null'}`);
+            console.log(`PLAY_NOTE_DEBUG: currentActiveSynthType = ${currentActiveSynthType}, synth is ${synth ? synth.constructor.name : 'null'}, synth.loaded (if GrainPlayer): ${synth instanceof Tone.GrainPlayer ? synth.loaded : 'N/A'}`);
             try { 
-                if (synth instanceof Tone.GrainPlayer) { // Check instance type
+                if (synth instanceof Tone.GrainPlayer) { 
                     if (synth.loaded) { 
-                        // Re-apply granular params from UI just before playing
                         synth.loop = dom.granularLoop.checked;
                         synth.loopStart = parseFloat(dom.granularLoopStart.value) * synth.buffer.duration;
                         synth.loopEnd = parseFloat(dom.granularLoopEnd.value) * synth.buffer.duration;
@@ -487,11 +500,12 @@
                         synth.start(Tone.now(), offset, duration); 
                     } else { console.warn("PlayNote (GrainPlayer): Buffer not loaded. Cannot play."); return; }
                 } else if (synth instanceof Tone.PolySynth) { 
+                    console.log("PLAYNOTE_DEBUG: Attempting PolySynth.triggerAttack. Synth object:", synth, "Is triggerAttack a function?", typeof synth.triggerAttack);
                     if (typeof synth.triggerAttack === 'function') {
                          synth.triggerAttack(fullNoteName, Tone.now(), velocity); 
-                    } else { console.error("PLAYNOTE_ERROR: Synth is PolySynth but no triggerAttack method.", synth); }
+                    } else { console.error("PLAYNOTE_FATAL: synth.triggerAttack is NOT a function just before call, though synth IS a PolySynth instance.", synth); }
                 } else if (synth) { 
-                    console.error("PLAYNOTE_ERROR: Synth object is of unexpected type:", synth.constructor.name);
+                    console.error("PLAYNOTE_ERROR: Synth object is of unexpected type or not fully initialized:", synth);
                 } else { 
                     console.warn("PlayNote: Synth object is not available.");
                 }
@@ -499,19 +513,22 @@
             } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } 
         }
         function releaseNote(fullNoteName) { 
-            if (!synth) return; 
-            console.log(`RELEASE_NOTE_DEBUG: currentActiveSynthType = ${currentActiveSynthType}, synth is ${synth ? synth.constructor.name : 'null'}`);
+            if (!synth || synth.disposed || Tone.context.state !== 'running') { 
+                console.warn("ReleaseNote: Synth not ready or disposed."); return; 
+            } 
+            console.log(`RELEASE_NOTE_DEBUG: currentActiveSynthType = ${currentActiveSynthType}, synth is ${synth.constructor.name}`);
             try { 
                  if (synth instanceof Tone.GrainPlayer) {
-                    if (synth.loaded) synth.stop(Tone.now() + 0.05); 
+                    if (synth.loaded && typeof synth.stop === 'function') synth.stop(Tone.now() + 0.05); 
+                    else console.warn("ReleaseNote (GrainPlayer): Buffer not loaded or stop method missing.");
                 } else if (synth instanceof Tone.PolySynth) {
                     if (typeof synth.triggerRelease === 'function') {
                         synth.triggerRelease(fullNoteName, Tone.now() + 0.05); 
                     } else {
-                        console.error("RELEASENOTE_ERROR: Synth is PolySynth but no triggerRelease method.", synth);
+                        console.error("RELEASENOTE_FATAL: synth.triggerRelease is NOT a function just before call, though synth IS a PolySynth instance.", synth);
                     }
                 } else if (synth) {
-                     console.error("RELEASENOTE_ERROR: Synth object is of unexpected type:", synth.constructor.name);
+                     console.error("RELEASENOTE_ERROR: Synth object is of unexpected type or not fully initialized:", synth);
                 }
                 updateKeyVisualState(fullNoteName, false); 
             } catch (error) { console.error(`Error releasing ${fullNoteName}:`, error); } 
@@ -530,78 +547,78 @@
         function loadMidiMappings() { /* ... (same) ... */ try { const savedMappings = localStorage.getItem('syn7h_midiMappings'); if (savedMappings) { midiMappings = JSON.parse(savedMappings); console.log("MIDI Mappings loaded:", midiMappings); } else { midiMappings = {}; console.log("No saved MIDI mappings found."); } } catch (e) { console.error("Error loading MIDI mappings:", e); midiMappings = {}; } }
 
         // --- UI Control Event Listeners ---
-        dom.startAudioButton.addEventListener('click', async (e) => { document.body.focus(); dom.audioContextMessageOverlay.classList.remove('visible'); const success = await initializeAudio(); if(success) console.log("Audio init OK from Start."); else console.error("Audio init FAILED from Start."); });
-        dom.midiLearnButton.addEventListener('click', (e) => { toggleGlobalMidiLearnMode(); document.body.focus(); });
-        Object.keys(paramDefinitions).forEach(paramKey => { const definition = paramDefinitions[paramKey]; const element = dom[definition.elementId]; if (element) { const eventTypeForLearn = (definition.type === 'range' || definition.type === 'file') ? 'mousedown' : 'focus'; element.addEventListener(eventTypeForLearn, () => { if (isGlobalMidiLearnActive && !paramKeyToLearn) { setupMidiLearnForElement(paramKey); } }); const blurHandler = () => setTimeout(()=> document.body.focus(), 0); element.addEventListener('change', blurHandler); if (definition.type === 'range') {element.addEventListener('input', blurHandler); element.addEventListener('mouseup', blurHandler); element.addEventListener('touchend', blurHandler, {passive: true});}} else { console.warn(`MIDI Learn Setup: Element ID '${definition.elementId}' for param '${paramKey}' not found.`); }});
+        dom.startAudioButton.addEventListener('click', async (e) => { releaseAndRefocus(e); dom.audioContextMessageOverlay.classList.remove('visible'); const success = await initializeAudio(); if(success) console.log("Audio init OK from Start."); else console.error("Audio init FAILED from Start."); });
+        dom.midiLearnButton.addEventListener('click', (e) => { toggleGlobalMidiLearnMode(); releaseAndRefocus(e); });
+        Object.keys(paramDefinitions).forEach(paramKey => { const definition = paramDefinitions[paramKey]; const element = dom[definition.elementId]; if (element) { const eventTypeForLearn = (definition.type === 'range' || definition.type === 'file') ? 'mousedown' : 'focus'; element.addEventListener(eventTypeForLearn, (e) => { if (isGlobalMidiLearnActive && !paramKeyToLearn) { setupMidiLearnForElement(paramKey); } /* Do not blur here as it might prevent the control interaction itself */}); element.addEventListener('change', (e) => releaseAndRefocus(e)); if (definition.type === 'range') {element.addEventListener('input', (e) => { /* Update display only, actual audio change handled by 'change' or dedicated function */ updateSliderDisplay(e.target, dom[definition.elementId + 'Display'] || {}, paramDefinitions[paramKey].unit || '', paramDefinitions[paramKey].decimals === 0 ? 0 : (paramDefinitions[paramKey].decimals || 1)); /* No blur here, allow continuous sliding */ }); element.addEventListener('mouseup', (e) => releaseAndRefocus(e)); element.addEventListener('touchend', (e) => releaseAndRefocus(e), {passive: true});}} else { console.warn(`MIDI Learn Setup: Element ID '${definition.elementId}' for param '${paramKey}' not found.`); }});
 
-        dom.oscType.addEventListener('change', (e) => { updateOscillatorType(); document.body.focus(); });
-        const oscParamHandler = () => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); document.body.focus(); };
-        dom.pwmSpeed.addEventListener('input', () => { updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); oscParamHandler(); });
-        dom.fmHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); oscParamHandler();});
-        dom.fmModIndex.addEventListener('input', () => { updateSliderDisplay(dom.fmModIndex, dom.fmModIndexDisplay, '', 0); oscParamHandler();});
-        dom.supersawCount.addEventListener('input', () => { updateSliderDisplay(dom.supersawCount, dom.supersawCountDisplay, '', 0); oscParamHandler();});
-        dom.supersawSpread.addEventListener('input', () => { updateSliderDisplay(dom.supersawSpread, dom.supersawSpreadDisplay, ' cents', 0); oscParamHandler();});
-        dom.resonantBodyHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.resonantBodyHarmonicity, dom.resonantBodyHarmonicityDisplay, '', 1); oscParamHandler(); });
-        dom.resonantBodyModIndex.addEventListener('input', () => { updateSliderDisplay(dom.resonantBodyModIndex, dom.resonantBodyModIndexDisplay, '', 0); oscParamHandler(); });
-        dom.formantVoiceHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); oscParamHandler(); });
-        dom.formantVoiceModIndex.addEventListener('input', () => { updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0); oscParamHandler(); });
+        dom.oscType.addEventListener('change', (e) => { updateOscillatorType(); releaseAndRefocus(e); });
+        const oscParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); releaseAndRefocus(e); };
+        dom.pwmSpeed.addEventListener('input', (e) => { updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); oscParamHandler(e); });
+        dom.fmHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); oscParamHandler(e);});
+        dom.fmModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.fmModIndex, dom.fmModIndexDisplay, '', 0); oscParamHandler(e);});
+        dom.supersawCount.addEventListener('input', (e) => { updateSliderDisplay(dom.supersawCount, dom.supersawCountDisplay, '', 0); oscParamHandler(e);});
+        dom.supersawSpread.addEventListener('input', (e) => { updateSliderDisplay(dom.supersawSpread, dom.supersawSpreadDisplay, ' cents', 0); oscParamHandler(e);});
+        dom.resonantBodyHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.resonantBodyHarmonicity, dom.resonantBodyHarmonicityDisplay, '', 1); oscParamHandler(e); });
+        dom.resonantBodyModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.resonantBodyModIndex, dom.resonantBodyModIndexDisplay, '', 0); oscParamHandler(e); });
+        dom.formantVoiceHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); oscParamHandler(e); });
+        dom.formantVoiceModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0); oscParamHandler(e); });
         
         // Granular controls 
-        dom.granularFileInput.addEventListener('change', (event) => { const file = event.target.files[0]; if (file && file.type === "audio/wav") { const reader = new FileReader(); reader.onload = (e_reader) => { Tone.Buffer.fromUrl(e_reader.target.result).then(buffer => { grainPlayerBuffer = buffer; if (dom.oscType.value === 'granular') { updateOscillatorType(); } dom.midiLearnStatus.textContent = `Loaded: ${file.name.substring(0,20)}...`; }).catch(err => { console.error("Error loading WAV into Tone.Buffer:", err); dom.midiLearnStatus.textContent = "Error loading WAV."; }); }; reader.readAsDataURL(file); } else if (file) { dom.midiLearnStatus.textContent = "Please select a .wav file."; console.warn("GRANULAR: Non-WAV file selected."); } document.body.focus(); });
-        dom.granularLoop.addEventListener('change', (e) => { if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.loop = e.target.checked; applyCurrentOscillatorSpecificSettings('granular');} document.body.focus(); });
-        dom.granularLoopStart.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopStart, dom.granularLoopStartDisplay, '', 2); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.loopStart = parseFloat(e.target.value) * synth.buffer.duration; applyCurrentOscillatorSpecificSettings('granular');} document.body.focus(); });
-        dom.granularLoopEnd.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopEnd, dom.granularLoopEndDisplay, '', 2); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.loopEnd = parseFloat(e.target.value) * synth.buffer.duration; applyCurrentOscillatorSpecificSettings('granular');} document.body.focus(); });
-        dom.granularReverse.addEventListener('change', (e) => { if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.reverse = e.target.checked; applyCurrentOscillatorSpecificSettings('granular');} document.body.focus(); });
-        dom.granularGrainSize.addEventListener('input', (e) => { updateSliderDisplay(dom.granularGrainSize, dom.granularGrainSizeDisplay, 's', 3); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.grainSize = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} document.body.focus(); });
-        dom.granularOverlap.addEventListener('input', (e) => { updateSliderDisplay(dom.granularOverlap, dom.granularOverlapDisplay, 's', 3); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.overlap = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} document.body.focus(); });
-        dom.granularDetune.addEventListener('input', (e) => { updateSliderDisplay(dom.granularDetune, dom.granularDetuneDisplay, ' cents', 0); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.detune = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} document.body.focus(); });
-        dom.granularPlaybackRate.addEventListener('input', (e) => { updateSliderDisplay(dom.granularPlaybackRate, dom.granularPlaybackRateDisplay, 'x', 2); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.playbackRate = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} document.body.focus(); });
+        dom.granularFileInput.addEventListener('change', (event) => { const file = event.target.files[0]; if (file && file.type === "audio/wav") { const reader = new FileReader(); reader.onload = (e_reader) => { Tone.Buffer.fromUrl(e_reader.target.result).then(buffer => { grainPlayerBuffer = buffer; if (dom.oscType.value === 'granular') { updateOscillatorType(); } dom.midiLearnStatus.textContent = `Loaded: ${file.name.substring(0,20)}...`; }).catch(err => { console.error("Error loading WAV into Tone.Buffer:", err); dom.midiLearnStatus.textContent = "Error loading WAV."; }); }; reader.readAsDataURL(file); } else if (file) { dom.midiLearnStatus.textContent = "Please select a .wav file."; console.warn("GRANULAR: Non-WAV file selected."); } releaseAndRefocus(event); });
+        dom.granularLoop.addEventListener('change', (e) => { if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.loop = e.target.checked; applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
+        dom.granularLoopStart.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopStart, dom.granularLoopStartDisplay, '', 2); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.loopStart = parseFloat(e.target.value) * synth.buffer.duration; applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
+        dom.granularLoopEnd.addEventListener('input', (e) => { updateSliderDisplay(dom.granularLoopEnd, dom.granularLoopEndDisplay, '', 2); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.loopEnd = parseFloat(e.target.value) * synth.buffer.duration; applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
+        dom.granularReverse.addEventListener('change', (e) => { if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.reverse = e.target.checked; applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
+        dom.granularGrainSize.addEventListener('input', (e) => { updateSliderDisplay(dom.granularGrainSize, dom.granularGrainSizeDisplay, 's', 3); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.grainSize = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
+        dom.granularOverlap.addEventListener('input', (e) => { updateSliderDisplay(dom.granularOverlap, dom.granularOverlapDisplay, 's', 3); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.overlap = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
+        dom.granularDetune.addEventListener('input', (e) => { updateSliderDisplay(dom.granularDetune, dom.granularDetuneDisplay, ' cents', 0); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.detune = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
+        dom.granularPlaybackRate.addEventListener('input', (e) => { updateSliderDisplay(dom.granularPlaybackRate, dom.granularPlaybackRateDisplay, 'x', 2); if(synth && currentActiveSynthType === 'GrainPlayer' && synth.loaded) {synth.playbackRate = parseFloat(e.target.value); applyCurrentOscillatorSpecificSettings('granular');} releaseAndRefocus(e); });
 
 
-        function updateVolumeAndEnvelopes() { applyCurrentOscillatorSpecificSettings(dom.oscType.value); document.body.focus(); } 
-        dom.volume.addEventListener('input', (e) => {updateSliderDisplay(dom.volume, dom.volumeDisplay, 'dB',0); updateVolumeAndEnvelopes();}); // event not passed to keep original blur
-        dom.ampEnvAttack.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvAttack, dom.ampEnvAttackDisplay, 's', 3); updateVolumeAndEnvelopes(); e.target.blur(); });
-        dom.ampEnvDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvDecay, dom.ampEnvDecayDisplay, 's', 2); updateVolumeAndEnvelopes(); e.target.blur(); });
-        dom.ampEnvSustain.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvSustain, dom.ampEnvSustainDisplay, '', 2); updateVolumeAndEnvelopes(); e.target.blur(); });
-        dom.ampEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvRelease, dom.ampEnvReleaseDisplay, 's', 2); updateVolumeAndEnvelopes(); e.target.blur(); });
+        function updateVolumeAndEnvelopes(event) { applyCurrentOscillatorSpecificSettings(dom.oscType.value); if(event && event.target) releaseAndRefocus(event); } 
+        dom.volume.addEventListener('input', (e) => {updateSliderDisplay(dom.volume, dom.volumeDisplay, 'dB',0); updateVolumeAndEnvelopes(e);}); 
+        dom.ampEnvAttack.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvAttack, dom.ampEnvAttackDisplay, 's', 3); updateVolumeAndEnvelopes(e); });
+        dom.ampEnvDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvDecay, dom.ampEnvDecayDisplay, 's', 2); updateVolumeAndEnvelopes(e); });
+        dom.ampEnvSustain.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvSustain, dom.ampEnvSustainDisplay, '', 2); updateVolumeAndEnvelopes(e); });
+        dom.ampEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.ampEnvRelease, dom.ampEnvReleaseDisplay, 's', 2); updateVolumeAndEnvelopes(e); });
 
-        dom.filterType.addEventListener('change', (e) => {applyCurrentOscillatorSpecificSettings(dom.oscType.value); document.body.focus(); });
-        const filterParamHandler = () => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); document.body.focus(); };
-        dom.filterCutoff.addEventListener('input', (e) => { updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); filterParamHandler(); e.target.blur(); });
-        dom.filterResonance.addEventListener('input', (e) => { updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q'); filterParamHandler(); e.target.blur(); });
-        dom.filterEnvAttack.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvAttack, dom.filterEnvAttackDisplay, 's', 3); filterParamHandler(); e.target.blur(); });
-        dom.filterEnvDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvDecay, dom.filterEnvDecayDisplay, 's', 2); filterParamHandler(); e.target.blur(); });
-        dom.filterEnvSustain.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvSustain, dom.filterEnvSustainDisplay, '', 2); filterParamHandler(); e.target.blur(); });
-        dom.filterEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvRelease, dom.filterEnvReleaseDisplay, 's', 2); filterParamHandler(); e.target.blur(); });
-        dom.filterEnvAmount.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvAmount, dom.filterEnvAmountDisplay, ' oct', 1); filterParamHandler(); e.target.blur(); });
+        dom.filterType.addEventListener('change', (e) => {applyCurrentOscillatorSpecificSettings(dom.oscType.value); releaseAndRefocus(e); });
+        const filterParamHandler = (e) => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); releaseAndRefocus(e); };
+        dom.filterCutoff.addEventListener('input', (e) => { updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); filterParamHandler(e); });
+        dom.filterResonance.addEventListener('input', (e) => { updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q'); filterParamHandler(e); });
+        dom.filterEnvAttack.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvAttack, dom.filterEnvAttackDisplay, 's', 3); filterParamHandler(e); });
+        dom.filterEnvDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvDecay, dom.filterEnvDecayDisplay, 's', 2); filterParamHandler(e); });
+        dom.filterEnvSustain.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvSustain, dom.filterEnvSustainDisplay, '', 2); filterParamHandler(e); });
+        dom.filterEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvRelease, dom.filterEnvReleaseDisplay, 's', 2); filterParamHandler(e); });
+        dom.filterEnvAmount.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvAmount, dom.filterEnvAmountDisplay, ' oct', 1); filterParamHandler(e); });
 
-        const lfoUpdateHandler = () => { updateLFO1Connections(); document.body.focus(); };
-        dom.lfo1Enable.addEventListener('change', (e)=>{lfoUpdateHandler(); e.target.blur();}); 
-        dom.lfo1Wave.addEventListener('change', (e)=>{lfoUpdateHandler(); e.target.blur();}); 
-        dom.lfo1PulseWidth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); if (lfo1 && dom.lfo1Wave.value === 'pulse') lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); e.target.blur();});
-        dom.lfo1PwmFreq.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz'); if (lfo1 && dom.lfo1Wave.value === 'pwm') lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); e.target.blur();});
-        dom.lfo1Rate.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Rate, dom.lfo1RateDisplay, 'Hz'); lfoUpdateHandler(); e.target.blur();});
-        dom.lfo1Depth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2); lfoUpdateHandler(); e.target.blur();});
-        dom.lfo1Destination.addEventListener('change', (e)=>{lfoUpdateHandler(); e.target.blur();});
+        const lfoUpdateHandler = (e) => { updateLFO1Connections(); releaseAndRefocus(e); };
+        dom.lfo1Enable.addEventListener('change', lfoUpdateHandler); 
+        dom.lfo1Wave.addEventListener('change', lfoUpdateHandler); 
+        dom.lfo1PulseWidth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); if (lfo1 && dom.lfo1Wave.value === 'pulse') lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); releaseAndRefocus(e);});
+        dom.lfo1PwmFreq.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz'); if (lfo1 && dom.lfo1Wave.value === 'pwm') lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); releaseAndRefocus(e);});
+        dom.lfo1Rate.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Rate, dom.lfo1RateDisplay, 'Hz'); lfoUpdateHandler(e); });
+        dom.lfo1Depth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2); lfoUpdateHandler(e); });
+        dom.lfo1Destination.addEventListener('change', lfoUpdateHandler);
 
         // Effect Control Listeners
-        const effectToggleHandler = (e) => { applyAudioChain(); e.target.blur(); };
-        const effectWetHandler = (slider, display, unit, decimals, e) => { updateSliderDisplay(slider, display, unit, decimals); applyAudioChain(); e.target.blur(); };
-        const effectParamHandler = (slider, display, unit, decimals, effectNode, paramName, e) => { updateSliderDisplay(slider, display, unit, decimals); if(effectNode && effectNode[paramName] !== undefined) { if(typeof effectNode[paramName].value !== 'undefined') {effectNode[paramName].value = parseFloat(slider.value); } else {effectNode[paramName] = parseFloat(slider.value);} } e.target.blur(); };
+        const effectToggleHandler = (e) => { applyAudioChain(); releaseAndRefocus(e); };
+        const effectWetHandler = (slider, display, unit, decimals, e) => { updateSliderDisplay(slider, display, unit, decimals); applyAudioChain(); releaseAndRefocus(e); };
+        const effectParamHandler = (slider, display, unit, decimals, effectNode, paramName, e) => { updateSliderDisplay(slider, display, unit, decimals); if(effectNode && effectNode[paramName] !== undefined) { if(typeof effectNode[paramName].value !== 'undefined') {effectNode[paramName].value = parseFloat(slider.value); } else {effectNode[paramName] = parseFloat(slider.value);} } releaseAndRefocus(e); };
         
         dom.distEnable.addEventListener('change', effectToggleHandler); dom.distAmount.addEventListener('input', (e) => effectParamHandler(dom.distAmount, dom.distAmountDisplay, '', 2, distortionEffect, 'distortion', e)); dom.distWet.addEventListener('input', (e) => effectWetHandler(dom.distWet, dom.distWetDisplay, '', 2, e));
-        dom.crusherEnable.addEventListener('change', effectToggleHandler); dom.crusherBits.addEventListener('input', (e) => { updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, ' bits', 0); if(bitCrusherEffect) bitCrusherEffect.bits.value = parseInt(dom.crusherBits.value); e.target.blur(); }); dom.crusherWet.addEventListener('input', (e) => effectWetHandler(dom.crusherWet, dom.crusherWetDisplay, '', 2, e));
+        dom.crusherEnable.addEventListener('change', effectToggleHandler); dom.crusherBits.addEventListener('input', (e) => { updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, ' bits', 0); if(bitCrusherEffect) bitCrusherEffect.bits.value = parseInt(dom.crusherBits.value); releaseAndRefocus(e); }); dom.crusherWet.addEventListener('input', (e) => effectWetHandler(dom.crusherWet, dom.crusherWetDisplay, '', 2, e));
         dom.ringModEnable.addEventListener('change', effectToggleHandler); dom.ringModFrequency.addEventListener('input', (e) => effectParamHandler(dom.ringModFrequency, dom.ringModFrequencyDisplay, ' Hz', 0, ringModulatorEffect, 'frequency', e)); dom.ringModWet.addEventListener('input', (e) => effectWetHandler(dom.ringModWet, dom.ringModWetDisplay, '', 2, e));
         dom.chorusEnable.addEventListener('change', effectToggleHandler); dom.chorusRate.addEventListener('input', (e) => effectParamHandler(dom.chorusRate, dom.chorusRateDisplay, 'Hz', 1, chorusEffect.frequency, 'value', e)); dom.chorusDepth.addEventListener('input', (e) => effectParamHandler(dom.chorusDepth, dom.chorusDepthDisplay, '', 2, chorusEffect, 'depth', e)); dom.chorusFeedback.addEventListener('input', (e) => effectParamHandler(dom.chorusFeedback, dom.chorusFeedbackDisplay, '', 2, chorusEffect.feedback, 'value', e)); dom.chorusWet.addEventListener('input', (e) => effectWetHandler(dom.chorusWet, dom.chorusWetDisplay, '', 2, e));
         dom.phaserEnable.addEventListener('change', effectToggleHandler); dom.phaserFrequency.addEventListener('input', (e) => effectParamHandler(dom.phaserFrequency, dom.phaserFrequencyDisplay, 'Hz', 1, phaserEffect.frequency, 'value', e)); dom.phaserOctaves.addEventListener('input', (e) => effectParamHandler(dom.phaserOctaves, dom.phaserOctavesDisplay, '', 1, phaserEffect, 'octaves', e)); dom.phaserBaseFreq.addEventListener('input', (e) => effectParamHandler(dom.phaserBaseFreq, dom.phaserBaseFreqDisplay, 'Hz', 0, phaserEffect, 'baseFrequency', e)); dom.phaserWet.addEventListener('input', (e) => effectWetHandler(dom.phaserWet, dom.phaserWetDisplay, '', 2, e));
         dom.delayEnable.addEventListener('change', effectToggleHandler); dom.delayTime.addEventListener('input', (e) => effectParamHandler(dom.delayTime, dom.delayTimeDisplay, 's', 2, delayEffect.delayTime, 'value', e)); dom.delayFeedback.addEventListener('input', (e) => effectParamHandler(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2, delayEffect.feedback, 'value', e)); dom.delayWet.addEventListener('input', (e) => effectWetHandler(dom.delayWet, dom.delayWetDisplay, '', 2, e));
         dom.pingpongEnable.addEventListener('change', effectToggleHandler); dom.pingpongDelayTime.addEventListener('input', (e) => effectParamHandler(dom.pingpongDelayTime, dom.pingpongDelayTimeDisplay, 's', 2, pingPongDelayEffect.delayTime, 'value', e)); dom.pingpongFeedback.addEventListener('input', (e) => effectParamHandler(dom.pingpongFeedback, dom.pingpongFeedbackDisplay, '', 2, pingPongDelayEffect.feedback, 'value', e)); dom.pingpongWet.addEventListener('input', (e) => effectWetHandler(dom.pingpongWet, dom.pingpongWetDisplay, '', 2, e));
-        dom.reverbEnable.addEventListener('change', effectToggleHandler); dom.reverbDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); if(reverbEffect) reverbEffect.decay = parseFloat(dom.reverbDecay.value); e.target.blur(); }); dom.reverbWet.addEventListener('input', (e) => effectWetHandler(dom.reverbWet, dom.reverbWetDisplay, '', 2, e));
+        dom.reverbEnable.addEventListener('change', effectToggleHandler); dom.reverbDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); if(reverbEffect) reverbEffect.decay = parseFloat(dom.reverbDecay.value); releaseAndRefocus(e); }); dom.reverbWet.addEventListener('input', (e) => effectWetHandler(dom.reverbWet, dom.reverbWetDisplay, '', 2, e));
 
 
         // --- Initial Page Load ---
         window.addEventListener('load', () => {
-            document.body.tabIndex = -1; // Make body focusable
+            document.body.tabIndex = -1; // Make body focusable for the blur trick
             console.log("Window loaded."); 
             dom.octaveDisplay.textContent = startingOctave; 
             createOnScreenKeyboard(); 
