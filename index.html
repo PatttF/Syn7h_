@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Syn7h_</title> 
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Inter', sans-serif; 
+            overscroll-behavior: none; 
+            background-color: #1a202c; 
+            color: #e2e8f0; 
+        }
+        .keyboard { display: flex; justify-content: center; align-items: flex-start; padding: 20px; background-color: #2d3748; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); position: relative; -webkit-user-select: none; -ms-user-select: none; user-select: none; }
+        .key { border: 1px solid #4a5568; border-radius: 5px; cursor: pointer; display: flex; justify-content: center; align-items: flex-end; font-size: 10px; padding-bottom: 5px; transition: background-color 0.1s ease; }
+        .white-key { background-color: #f7fafc; color: #2d3748; width: 40px; height: 180px; z-index: 1; margin-right: -1px; }
+        .white-key:active, .white-key.active { background-color: #a0aec0; }
+        .black-key { background-color: #2d3748; color: #cbd5e0; width: 28px; height: 110px; position: absolute; z-index: 2; margin-left: -14px; border: 1px solid #1a202c;}
+        .black-key:active, .black-key.active { background-color: #4a5568; }
+        
+        .controls-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; width: 100%; max-width: 1400px; }
+        .control-group { display: flex; flex-direction: column; align-items: stretch; padding: 12px; background-color: #2d3748; border: 1px solid #4a5568; border-radius: 8px; }
+        .control-group label, .control-group .group-title { margin-bottom: 8px; font-size: 0.875rem; color: #a0aec0; font-weight: 600; text-align: center; text-transform: uppercase; letter-spacing: 0.05em;}
+        .control-group select, .control-group button, .control-group input[type="range"], .control-group input[type="checkbox"] { padding: 8px 6px; border-radius: 6px; border: 1px solid #4a5568; background-color: #1a202c; font-size: 0.875rem; cursor: pointer; color: #e2e8f0; width: 100%; box-sizing: border-box; margin-bottom: 4px; }
+        .control-group input[type="checkbox"] { width: auto; align-self:center; height: 20px; padding:0; margin-bottom: 8px; accent-color: #f56565;}
+        .control-group button { background-color: #f56565; color: #1a202c; font-weight: bold; border: none;}
+        .control-group button:hover { background-color: #dd5858; }
+        .control-group input[type="range"] { padding: 0; height: auto; accent-color: #f56565; }
+        .control-group .button-group { display: flex; justify-content: space-around; }
+        .control-group .button-group button { width: auto; padding: 6px 10px; }
+        .value-display { font-size: 0.75rem; color: #718096; margin-top: 0px; text-align: center; height: 1.2em; }
+        .hidden { display: none !important; }
+
+        .message-box-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 0.3s ease, visibility 0.3s ease; }
+        .message-box-overlay.visible { opacity: 1; visibility: visible; }
+        .message-box-content { background-color: #2d3748; padding: 25px; border-radius: 8px; box-shadow: 0 5px 20px rgba(0,0,0,0.5); text-align: center; color: #e2e8f0; border: 1px solid #4a5568;}
+        .message-box-content button { margin-top: 15px; padding: 10px 20px; border-radius: 6px; background-color: #f56565; color: #1a202c; font-weight: bold; border: none; cursor: pointer; transition: background-color 0.2s ease;}
+        .message-box-content button:hover { background-color: #dd5858; }
+        
+        #midi-status { margin-top: 10px; padding: 8px; background-color: #2d3748; border-radius: 6px; text-align:center; font-size: 0.9em; color: #a0aec0; border: 1px solid #4a5568;}
+        .instructions { font-size: 0.8em; color: #718096; margin-top:10px; text-align:center; }
+        
+        .title-container { display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
+        .logo { width: 60px; height: 60px; margin-right: 15px; stroke: #f56565; stroke-width: 2; fill: none; }
+        .main-title { font-family: 'Orbitron', sans-serif; font-size: 2.8rem; color: #e2e8f0; text-shadow: 0 0 5px #f56565, 0 0 10px #f56565, 0 0 15px #f5656533; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen flex flex-col items-center justify-center p-4 select-none">
+
+    <div class="w-full max-w-7xl mx-auto flex flex-col items-center">
+        <div class="title-container">
+            <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 80 20 C 80 10, 70 10, 60 10 S 40 10, 40 20 C 40 30, 50 30, 60 30 S 80 30, 80 40 C 80 50, 70 50, 60 50 S 40 50, 40 60 C 40 70, 50 70, 60 70 S 80 70, 80 80" stroke-linecap="round" stroke-linejoin="round"/>
+                <polyline points="20 15, 45 15, 25 85" stroke-linecap="round" stroke-linejoin="round"/>
+                <line x1="5" y1="95" x2="95" y2="95" stroke-width="1.5" stroke="#4a5568"/><line x1="15" y1="85" x2="85" y2="85" stroke-width="1" stroke="#4a5568"/>
+                <line x1="50" y1="50" x2="50" y2="95" stroke-width="0.5" stroke="#4a5568"/><line x1="30" y1="65" x2="30" y2="95" stroke-width="0.5" stroke="#4a5568"/><line x1="70" y1="65" x2="70" y2="95" stroke-width="0.5" stroke="#4a5568"/>
+            </svg>
+            <h1 class="main-title">Syn7h_</h1>
+        </div>
+
+        <div class="controls-container mb-8">
+            <!-- OSCILLATOR GROUP -->
+            <div class="control-group">
+                <span class="group-title">Oscillator</span>
+                <label for="osc-type">Type</label>
+                <select id="osc-type">
+                    <option value="sine">Sine</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="sawtooth">Sawtooth</option>
+                    <option value="pwm">PWM</option><option value="fmsine">FM Sine</option><option value="amsine">AM Sine</option><option value="fatsawtooth">Fat Saw</option>
+                    <option value="supersaw">Supersaw</option>
+                    <option value="resonantbody">Resonant Body</option>
+                    <option value="formantvoice">Formant Voice</option>
+                </select>
+                <div id="pwm-controls" class="hidden">
+                    <label for="pwm-speed">PWM Speed</label><input type="range" id="pwm-speed" min="0.1" max="20" value="5" step="0.1"><span id="pwm-speed-display" class="value-display">5 Hz</span>
+                </div>
+                <div id="fm-controls" class="hidden"> <!-- Generic FM Controls -->
+                    <label for="fm-harmonicity">FM Harmonicity</label><input type="range" id="fm-harmonicity" min="0.1" max="10" value="1.5" step="0.1"><span id="fm-harmonicity-display" class="value-display">1.5</span>
+                    <label for="fm-mod-index">FM Mod Index</label><input type="range" id="fm-mod-index" min="1" max="50" value="10" step="1"><span id="fm-mod-index-display" class="value-display">10</span>
+                </div>
+                <div id="supersaw-controls" class="hidden">
+                    <label for="supersaw-count">Saw Count</label><input type="range" id="supersaw-count" min="2" max="10" value="3" step="1"><span id="supersaw-count-display" class="value-display">3</span>
+                    <label for="supersaw-spread">Spread (cents)</label><input type="range" id="supersaw-spread" min="0" max="100" value="25" step="1"><span id="supersaw-spread-display" class="value-display">25 cents</span>
+                </div>
+                 <div id="resonantbody-controls" class="hidden">
+                    <label for="resonantbody-harmonicity">FM Harm (Resonant)</label><input type="range" id="resonantbody-harmonicity" min="0.1" max="20" value="2.7" step="0.1"><span id="resonantbody-harmonicity-display" class="value-display">2.7</span>
+                    <label for="resonantbody-mod-index">FM Index (Resonant)</label><input type="range" id="resonantbody-mod-index" min="1" max="100" value="20" step="1"><span id="resonantbody-mod-index-display" class="value-display">20</span>
+                </div>
+                <div id="formantvoice-controls" class="hidden">
+                    <label for="formantvoice-harmonicity">FM Harm (Formant)</label><input type="range" id="formantvoice-harmonicity" min="0.1" max="5" value="1.2" step="0.1"><span id="formantvoice-harmonicity-display" class="value-display">1.2</span>
+                    <label for="formantvoice-mod-index">FM Index (Formant)</label><input type="range" id="formantvoice-mod-index" min="1" max="30" value="5" step="1"><span id="formantvoice-mod-index-display" class="value-display">5</span>
+                </div>
+                <label for="octave-display-label">Computer Kbd Octave: <span id="octave-display">4</span></label>
+                <div class="button-group"><button id="octave-down">-</button><button id="octave-up" class="ml-2">+</button></div>
+            </div>
+            <!-- AMPLITUDE GROUP -->
+            <div class="control-group"> <span class="group-title">Amplitude</span> <label for="volume">Master Volume</label><input type="range" id="volume" min="-40" max="0" value="0" step="1"><span id="volume-display" class="value-display">0 dB</span> </div>
+            <!-- FILTER GROUP -->
+            <div class="control-group"> <span class="group-title">Filter</span> <label for="filter-type">Type</label> <select id="filter-type"> <option value="none">None</option><option value="moog">Lowpass (-24dB 'Moog')</option><option value="ms20lp">Lowpass (-12dB 'MS-20')</option><option value="ms20hp">Highpass (-12dB 'MS-20')</option> <option value="bandpass12">Bandpass (-12dB)</option><option value="bandpass24">Bandpass (-24dB)</option><option value="notch12">Notch (-12dB)</option><option value="notch24">Notch (-24dB)</option><option value="allpass">Allpass</option> </select> <label for="filter-cutoff">Cutoff Freq</label><input type="range" id="filter-cutoff" min="20" max="20000" value="15000" step="1"><span id="filter-cutoff-display" class="value-display">15000 Hz</span> <label for="filter-resonance">Resonance (Q)</label><input type="range" id="filter-resonance" min="0.1" max="30" value="1" step="0.1"><span id="filter-resonance-display" class="value-display">1.0 Q</span> </div>
+            <!-- LFO 1 GROUP -->
+            <div class="control-group"> <span class="group-title">LFO 1</span> <label for="lfo1-enable" style="margin-bottom: 2px;">Enable</label><input type="checkbox" id="lfo1-enable"> <label for="lfo1-wave">Waveform</label> <select id="lfo1-wave"> <option value="sine">Sine</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="sawtooth">Sawtooth</option> <option value="pulse">Pulse</option><option value="pwm">PWM</option> </select> <div id="lfo1-pulse-width-controls" class="hidden"> <label for="lfo1-pulse-width">Pulse Width</label><input type="range" id="lfo1-pulse-width" min="0.01" max="0.99" value="0.5" step="0.01"><span id="lfo1-pulse-width-display" class="value-display">0.5</span> </div> <div id="lfo1-pwm-freq-controls" class="hidden"> <label for="lfo1-pwm-freq">PWM Freq</label><input type="range" id="lfo1-pwm-freq" min="0.1" max="20" value="2" step="0.1"><span id="lfo1-pwm-freq-display" class="value-display">2 Hz</span> </div> <label for="lfo1-rate">Rate</label><input type="range" id="lfo1-rate" min="0.1" max="30" value="2" step="0.1"><span id="lfo1-rate-display" class="value-display">2 Hz</span> <label for="lfo1-depth">Depth</label><input type="range" id="lfo1-depth" min="0" max="1" value="0.5" step="0.01"><span id="lfo1-depth-display" class="value-display">0.5</span> <label for="lfo1-destination">Destination</label> <select id="lfo1-destination"> <option value="none">None</option><option value="pitch">Osc Pitch (Vibrato)</option><option value="filterCutoff">Filter Cutoff</option><option value="amplitude">Amplitude (Tremolo)</option> </select> </div>
+            <!-- EFFECTS -->
+            <div class="control-group"><span class="group-title">Distortion</span><label for="dist-enable">Enable</label><input type="checkbox" id="dist-enable"><label for="dist-amount">Amount</label><input type="range" id="dist-amount" min="0" max="1" value="0.0" step="0.01"><span id="dist-amount-display" class="value-display">0.0</span><label for="dist-wet">Wet</label><input type="range" id="dist-wet" min="0" max="1" value="0.0" step="0.01"><span id="dist-wet-display" class="value-display">0.0</span></div>
+            <div class="control-group"><span class="group-title">BitCrusher</span><label for="crusher-enable">Enable</label><input type="checkbox" id="crusher-enable"><label for="crusher-bits">Bits</label><input type="range" id="crusher-bits" min="1" max="16" value="8" step="1"><span id="crusher-bits-display" class="value-display">8 bits</span><label for="crusher-wet">Wet</label><input type="range" id="crusher-wet" min="0" max="1" value="0.0" step="0.01"><span id="crusher-wet-display" class="value-display">0.0</span></div>
+            <div class="control-group"><span class="group-title">Chorus</span><label for="chorus-enable">Enable</label><input type="checkbox" id="chorus-enable"><label for="chorus-rate">Rate</label><input type="range" id="chorus-rate" min="0.1" max="8" value="1.5" step="0.1"><span id="chorus-rate-display" class="value-display">1.5 Hz</span><label for="chorus-depth">Depth</label><input type="range" id="chorus-depth" min="0" max="1" value="0.7" step="0.01"><span id="chorus-depth-display" class="value-display">0.7</span><label for="chorus-feedback">Feedback</label><input type="range" id="chorus-feedback" min="0" max="0.9" value="0.2" step="0.01"><span id="chorus-feedback-display" class="value-display">0.2</span><label for="chorus-wet">Wet</label><input type="range" id="chorus-wet" min="0" max="1" value="0.0" step="0.01"><span id="chorus-wet-display" class="value-display">0.0</span></div>
+            <div class="control-group"><span class="group-title">Phaser</span><label for="phaser-enable">Enable</label><input type="checkbox" id="phaser-enable"><label for="phaser-frequency">LFO Freq</label><input type="range" id="phaser-frequency" min="0.1" max="10" value="0.5" step="0.1"><span id="phaser-frequency-display" class="value-display">0.5 Hz</span><label for="phaser-octaves">Octaves</label><input type="range" id="phaser-octaves" min="1" max="8" value="3" step="0.1"><span id="phaser-octaves-display" class="value-display">3</span><label for="phaser-base-freq">Base Freq</label><input type="range" id="phaser-base-freq" min="100" max="1500" value="350" step="10"><span id="phaser-base-freq-display" class="value-display">350 Hz</span><label for="phaser-wet">Wet</label><input type="range" id="phaser-wet" min="0" max="1" value="0.0" step="0.01"><span id="phaser-wet-display" class="value-display">0.0</span></div>
+            <div class="control-group"><span class="group-title">Delay</span><label for="delay-enable">Enable</label><input type="checkbox" id="delay-enable"><label for="delay-time">Time</label><input type="range" id="delay-time" min="0.01" max="1" value="0.25" step="0.01"><span id="delay-time-display" class="value-display">0.25 s</span><label for="delay-feedback">Feedback</label><input type="range" id="delay-feedback" min="0" max="0.9" value="0.3" step="0.01"><span id="delay-feedback-display" class="value-display">0.3</span><label for="delay-wet">Wet</label><input type="range" id="delay-wet" min="0" max="1" value="0.0" step="0.01"><span id="delay-wet-display" class="value-display">0.0</span></div>
+            <div class="control-group"><span class="group-title">PingPongDelay</span><label for="pingpong-enable">Enable</label><input type="checkbox" id="pingpong-enable"><label for="pingpong-delay-time">Time</label><input type="range" id="pingpong-delay-time" min="0.01" max="1" value="0.35" step="0.01"><span id="pingpong-delay-time-display" class="value-display">0.35 s</span><label for="pingpong-feedback">Feedback</label><input type="range" id="pingpong-feedback" min="0" max="0.9" value="0.4" step="0.01"><span id="pingpong-feedback-display" class="value-display">0.4</span><label for="pingpong-wet">Wet</label><input type="range" id="pingpong-wet" min="0" max="1" value="0.0" step="0.01"><span id="pingpong-wet-display" class="value-display">0.0</span></div>
+            <div class="control-group"><span class="group-title">Reverb</span><label for="reverb-enable">Enable</label><input type="checkbox" id="reverb-enable"><label for="reverb-decay">Decay</label><input type="range" id="reverb-decay" min="0.1" max="10" value="1.5" step="0.1"><span id="reverb-decay-display" class="value-display">1.5 s</span><label for="reverb-wet">Wet</label><input type="range" id="reverb-wet" min="0" max="1" value="0.0" step="0.01"><span id="reverb-wet-display" class="value-display">0.0</span></div>
+        </div>
+
+        <div id="keyboard" class="keyboard select-none touch-manipulation"></div>
+        <div id="midi-status" class="text-sm mt-2">Initializing MIDI...</div>
+        <p class="instructions">Computer Keyboard: 'A' row (ASDF...) for white keys, 'Q' row (QWER...) for black keys. Use Octave +/- for computer kbd.</p>
+    </div>
+    <div id="audio-context-message-overlay" class="message-box-overlay"><div class="message-box-content"><p>Click "Start" to enable audio.</p><button id="start-audio-button">Start</button></div></div>
+
+    <script>
+        // --- Global Variables & Tone.js Objects ---
+        let synth;
+        let computerKeyboardOctave = 4; 
+        let mainFilter;
+        let lfo1, lfo1ToDetuneGain, lfo1ToFilterFreqGain;
+        let tremoloEffect, distortionEffect, bitCrusherEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect;
+        let currentPolySynthVoiceType = Tone.MonoSynth; 
+
+        // --- DOM Element Grabbing (Centralized) ---
+        const dom = {
+            oscType: document.getElementById('osc-type'), pwmControls: document.getElementById('pwm-controls'), pwmSpeed: document.getElementById('pwm-speed'), pwmSpeedDisplay: document.getElementById('pwm-speed-display'), fmControls: document.getElementById('fm-controls'), fmHarmonicity: document.getElementById('fm-harmonicity'), fmHarmonicityDisplay: document.getElementById('fm-harmonicity-display'), fmModIndex: document.getElementById('fm-mod-index'), fmModIndexDisplay: document.getElementById('fm-mod-index-display'), 
+            supersawControls: document.getElementById('supersaw-controls'), supersawCount: document.getElementById('supersaw-count'), supersawCountDisplay: document.getElementById('supersaw-count-display'), supersawSpread: document.getElementById('supersaw-spread'), supersawSpreadDisplay: document.getElementById('supersaw-spread-display'),
+            resonantBodyControls: document.getElementById('resonantbody-controls'), resonantBodyHarmonicity: document.getElementById('resonantbody-harmonicity'), resonantBodyHarmonicityDisplay: document.getElementById('resonantbody-harmonicity-display'), resonantBodyModIndex: document.getElementById('resonantbody-mod-index'), resonantBodyModIndexDisplay: document.getElementById('resonantbody-mod-index-display'),
+            formantVoiceControls: document.getElementById('formantvoice-controls'), formantVoiceHarmonicity: document.getElementById('formantvoice-harmonicity'), formantVoiceHarmonicityDisplay: document.getElementById('formantvoice-harmonicity-display'), formantVoiceModIndex: document.getElementById('formantvoice-mod-index'), formantVoiceModIndexDisplay: document.getElementById('formantvoice-mod-index-display'),
+            octaveDisplay: document.getElementById('octave-display'), octaveUp: document.getElementById('octave-up'), octaveDown: document.getElementById('octave-down'), volume: document.getElementById('volume'), volumeDisplay: document.getElementById('volume-display'), filterType: document.getElementById('filter-type'), filterCutoff: document.getElementById('filter-cutoff'), filterCutoffDisplay: document.getElementById('filter-cutoff-display'), filterResonance: document.getElementById('filter-resonance'), filterResonanceDisplay: document.getElementById('filter-resonance-display'), 
+            lfo1Enable: document.getElementById('lfo1-enable'), lfo1Wave: document.getElementById('lfo1-wave'), lfo1Rate: document.getElementById('lfo1-rate'), lfo1RateDisplay: document.getElementById('lfo1-rate-display'), lfo1Depth: document.getElementById('lfo1-depth'), lfo1DepthDisplay: document.getElementById('lfo1-depth-display'), lfo1Destination: document.getElementById('lfo1-destination'),
+            lfo1PulseWidthControls: document.getElementById('lfo1-pulse-width-controls'), lfo1PulseWidth: document.getElementById('lfo1-pulse-width'), lfo1PulseWidthDisplay: document.getElementById('lfo1-pulse-width-display'),
+            lfo1PwmFreqControls: document.getElementById('lfo1-pwm-freq-controls'), lfo1PwmFreq: document.getElementById('lfo1-pwm-freq'), lfo1PwmFreqDisplay: document.getElementById('lfo1-pwm-freq-display'),
+            distEnable: document.getElementById('dist-enable'), distAmount: document.getElementById('dist-amount'), distAmountDisplay: document.getElementById('dist-amount-display'), distWet: document.getElementById('dist-wet'), distWetDisplay: document.getElementById('dist-wet-display'), 
+            crusherEnable: document.getElementById('crusher-enable'), crusherBits: document.getElementById('crusher-bits'), crusherBitsDisplay: document.getElementById('crusher-bits-display'), crusherWet: document.getElementById('crusher-wet'), crusherWetDisplay: document.getElementById('crusher-wet-display'),
+            chorusEnable: document.getElementById('chorus-enable'), chorusRate: document.getElementById('chorus-rate'), chorusRateDisplay: document.getElementById('chorus-rate-display'), chorusDepth: document.getElementById('chorus-depth'), chorusDepthDisplay: document.getElementById('chorus-depth-display'), chorusFeedback: document.getElementById('chorus-feedback'), chorusFeedbackDisplay: document.getElementById('chorus-feedback-display'), chorusWet: document.getElementById('chorus-wet'), chorusWetDisplay: document.getElementById('chorus-wet-display'), 
+            phaserEnable: document.getElementById('phaser-enable'), phaserFrequency: document.getElementById('phaser-frequency'), phaserFrequencyDisplay: document.getElementById('phaser-frequency-display'), phaserOctaves: document.getElementById('phaser-octaves'), phaserOctavesDisplay: document.getElementById('phaser-octaves-display'), phaserBaseFreq: document.getElementById('phaser-base-freq'), phaserBaseFreqDisplay: document.getElementById('phaser-base-freq-display'), phaserWet: document.getElementById('phaser-wet'), phaserWetDisplay: document.getElementById('phaser-wet-display'),
+            delayEnable: document.getElementById('delay-enable'), delayTime: document.getElementById('delay-time'), delayTimeDisplay: document.getElementById('delay-time-display'), delayFeedback: document.getElementById('delay-feedback'), delayFeedbackDisplay: document.getElementById('delay-feedback-display'), delayWet: document.getElementById('delay-wet'), delayWetDisplay: document.getElementById('delay-wet-display'), 
+            pingpongEnable: document.getElementById('pingpong-enable'), pingpongDelayTime: document.getElementById('pingpong-delay-time'), pingpongDelayTimeDisplay: document.getElementById('pingpong-delay-time-display'), pingpongFeedback: document.getElementById('pingpong-feedback'), pingpongFeedbackDisplay: document.getElementById('pingpong-feedback-display'), pingpongWet: document.getElementById('pingpong-wet'), pingpongWetDisplay: document.getElementById('pingpong-wet-display'),
+            reverbEnable: document.getElementById('reverb-enable'), reverbDecay: document.getElementById('reverb-decay'), reverbDecayDisplay: document.getElementById('reverb-decay-display'), reverbWet: document.getElementById('reverb-wet'), reverbWetDisplay: document.getElementById('reverb-wet-display'), 
+            keyboard: document.getElementById('keyboard'), audioContextMessageOverlay: document.getElementById('audio-context-message-overlay'), startAudioButton: document.getElementById('start-audio-button'), midiStatus: document.getElementById('midi-status')
+        };
+        
+        for (const key in dom) { if (dom[key] === null) { console.error(`CRITICAL DOM ERROR: Element for dom.${key} not found!`); }}
+
+        const notesLayout = [ { name: 'C', freqName: 'C', type: 'white' }, { name: 'C#', freqName: 'C#', type: 'black' },{ name: 'D', freqName: 'D', type: 'white' }, { name: 'D#', freqName: 'D#', type: 'black' },{ name: 'E', freqName: 'E', type: 'white' }, { name: 'F', freqName: 'F', type: 'white' },{ name: 'F#', freqName: 'F#', type: 'black' }, { name: 'G', freqName: 'G', type: 'white' },{ name: 'G#', freqName: 'G#', type: 'black' }, { name: 'A', freqName: 'A', type: 'white' },{ name: 'A#', freqName: 'A#', type: 'black' }, { name: 'B', freqName: 'B', type: 'white' } ];
+        const noteNamesSharp = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+        const pressedComputerKeys = new Set();
+        const computerKeyNoteMapping = { 'a': 'C', 's': 'D', 'd': 'E', 'f': 'F', 'g': 'G', 'h': 'A', 'j': 'B', 'w': 'C#', 'e': 'D#', 't': 'F#', 'y': 'G#', 'u': 'A#', 'k': 'C',};
+        let midiAccess = null;
+
+        function showMessage(overlayElem, message, buttonText, callback) { console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
+        function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
+
+        async function initializeAudio() {
+            console.log("AUDIO_INIT: Starting. Tone.context.state:", Tone.context.state);
+            if (Tone.context.state !== 'running') {
+                try { await Tone.start(); console.log("AUDIO_INIT: Tone.start() OK. State:", Tone.context.state); }
+                catch (error) { console.error("AUDIO_INIT_ERROR: Tone.start() failed:", error); showMessage(dom.audioContextMessageOverlay, "Error initializing audio.", "Close", () => {}); return false; }
+            }
+            if (!synth) { 
+                try {
+                    console.log("AUDIO_INIT: Creating Tone.js objects...");
+                    lfo1ToDetuneGain = new Tone.Multiply(0); 
+                    lfo1ToFilterFreqGain = new Tone.Multiply(0);
+                    lfo1 = new Tone.LFO({ frequency: parseFloat(dom.lfo1Rate.value), type: dom.lfo1Wave.value, min: -1, max: 1 });
+                    
+                    tremoloEffect = new Tone.Tremolo({ frequency: parseFloat(dom.lfo1Rate.value), type: dom.lfo1Wave.value, depth: 0, spread: 0 });
+                    distortionEffect = new Tone.Distortion(parseFloat(dom.distAmount.value));
+                    bitCrusherEffect = new Tone.BitCrusher(parseInt(dom.crusherBits.value));
+                    mainFilter = new Tone.Filter(parseFloat(dom.filterCutoff.value), "lowpass", -24); mainFilter.Q.value = parseFloat(dom.filterResonance.value);
+                    chorusEffect = new Tone.Chorus({ frequency: parseFloat(dom.chorusRate.value), depth: parseFloat(dom.chorusDepth.value), feedback: parseFloat(dom.chorusFeedback.value), delayTime: 3.5, type: "sine" });
+                    phaserEffect = new Tone.Phaser({ frequency: parseFloat(dom.phaserFrequency.value), octaves: parseFloat(dom.phaserOctaves.value), baseFrequency: parseFloat(dom.phaserBaseFreq.value) });
+                    delayEffect = new Tone.FeedbackDelay({ delayTime: parseFloat(dom.delayTime.value), feedback: parseFloat(dom.delayFeedback.value) });
+                    pingPongDelayEffect = new Tone.PingPongDelay({ delayTime: parseFloat(dom.pingpongDelayTime.value), feedback: parseFloat(dom.pingpongFeedback.value) });
+                    reverbEffect = new Tone.Reverb({ decay: parseFloat(dom.reverbDecay.value), preDelay: 0.01 });
+                    console.log("AUDIO_INIT: All effect nodes created.");
+
+                    distortionEffect.wet.value = dom.distEnable.checked ? parseFloat(dom.distWet.value) : 0; 
+                    bitCrusherEffect.wet.value = dom.crusherEnable.checked ? parseFloat(dom.crusherWet.value) : 0; 
+                    chorusEffect.wet.value = dom.chorusEnable.checked ? parseFloat(dom.chorusWet.value) : 0; 
+                    phaserEffect.wet.value = dom.phaserEnable.checked ? parseFloat(dom.phaserWet.value) : 0; 
+                    delayEffect.wet.value = dom.delayEnable.checked ? parseFloat(dom.delayWet.value) : 0; 
+                    pingPongDelayEffect.wet.value = dom.pingpongEnable.checked ? parseFloat(dom.pingpongWet.value) : 0; 
+                    reverbEffect.wet.value = dom.reverbEnable.checked ? parseFloat(dom.reverbWet.value) : 0;
+
+                    currentPolySynthVoiceType = Tone.MonoSynth; 
+                    synth = new Tone.PolySynth(currentPolySynthVoiceType); 
+                    console.log("AUDIO_INIT: PolySynth created with default voice:", currentPolySynthVoiceType.name);
+                    
+                    synth.set({ volume: parseFloat(dom.volume.value) }); 
+                    applyCurrentOscillatorSpecificSettings(dom.oscType.value); 
+                    
+                    applyAudioChain(); 
+                    updateLFO1Connections(); 
+
+                    console.log(`AUDIO_INIT: PRE-TEST_SOUND. Tone.context.state: ${Tone.context.state}. Synth exists: ${!!synth}. Synth volume: ${synth ? synth.volume.value : 'N/A'}`);
+                    if (synth && Tone.context.state === 'running') {
+                        synth.triggerAttackRelease("C4", "8n", Tone.now() + 0.1); 
+                        console.log("AUDIO_INIT: TEST SOUND (C4) triggered.");
+                    } else { console.warn("AUDIO_INIT: TEST SOUND NOT TRIGGERED."); }
+                    await initializeMIDI();
+                } catch (error) { console.error("AUDIO_INIT_ERROR: Creating nodes failed:", error); showMessage(dom.audioContextMessageOverlay, "Synth creation error.", "Close", () => {}); return false; }
+            } else {  
+                console.log("AUDIO_INIT: Synth exists. Re-applying settings."); 
+                updateOscillatorType(); 
+            }
+            console.log("AUDIO_INIT: Initialization finished.");
+            return true;
+        }
+        
+        function updateOscillatorType() {
+            if (!Tone.context || Tone.context.state !== 'running') { console.warn("UPDATE_OSC_TYPE_WARN: AudioContext not running."); return; }
+            const newSelectedOscType = dom.oscType.value;
+            console.log("UPDATE_OSC_TYPE: Selected type:", newSelectedOscType);
+
+            dom.pwmControls.classList.add('hidden'); dom.fmControls.classList.add('hidden');
+            dom.supersawControls.classList.add('hidden'); 
+            dom.resonantBodyControls.classList.add('hidden'); 
+            dom.formantVoiceControls.classList.add('hidden');
+            // Pluck and Noise controls were already removed from HTML and dom object earlier
+
+            let newVoiceTypeConstructor = Tone.MonoSynth; // All current advanced types use MonoSynth
+            // No need to check if currentPolySynthVoiceType !== newVoiceTypeConstructor for these,
+            // as we are standardizing on MonoSynth for all advanced/Plaits-inspired types for now.
+            // If we were to re-introduce PluckSynth or NoiseSynth, then recreation would be needed.
+
+            switch (newSelectedOscType) {
+                case 'pwm': dom.pwmControls.classList.remove('hidden'); break;
+                case 'fmsine': dom.fmControls.classList.remove('hidden'); break;
+                case 'supersaw': dom.supersawControls.classList.remove('hidden'); break; 
+                case 'resonantbody': dom.resonantBodyControls.classList.remove('hidden'); break;
+                case 'formantvoice': dom.formantVoiceControls.classList.remove('hidden'); break;
+                // 'amsine', 'fatsawtooth', 'sine', 'square', 'triangle', 'sawtooth' use MonoSynth without extra controls.
+            }
+            
+            // If synth doesn't exist (e.g., first call during init), it's created in initializeAudio
+            // If it does exist, we just apply settings to its current voices.
+            if (synth) {
+                applyCurrentOscillatorSpecificSettings(newSelectedOscType);
+            }
+        }
+
+        function applyCurrentOscillatorSpecificSettings(selectedOscType) {
+            if (!synth) { console.warn("APPLY_OSC_SETTINGS_WARN: Synth not ready."); return; }
+            console.log("APPLY_OSC_SETTINGS: Applying for type:", selectedOscType);
+
+            let voiceSpecificOptions = {}; 
+            // All these types currently use Tone.MonoSynth as the voice in PolySynth
+            // So, we configure the 'oscillator' property of MonoSynth
+            let monoSynthOscSettings = {};
+            switch (selectedOscType) {
+                case 'sine': case 'square': case 'triangle': case 'sawtooth': 
+                    monoSynthOscSettings = { type: selectedOscType }; break;
+                case 'pwm': 
+                    monoSynthOscSettings = { type: 'pwm', modulationFrequency: parseFloat(dom.pwmSpeed.value) }; break;
+                case 'fmsine': 
+                    monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.fmHarmonicity.value), modulationIndex: parseFloat(dom.fmModIndex.value), modulationType: 'sine' }; break;
+                case 'amsine': 
+                    monoSynthOscSettings = { type: 'amsine', harmonicity: 1, modulationType: 'square' }; break;
+                case 'fatsawtooth': 
+                    monoSynthOscSettings = { type: 'fatsawtooth', count: 3, spread: 20 }; break;
+                case 'supersaw': 
+                    monoSynthOscSettings = { type: 'fatsawtooth', count: parseInt(dom.supersawCount.value), spread: parseFloat(dom.supersawSpread.value) }; break;
+                case 'resonantbody':
+                    monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.resonantBodyHarmonicity.value), modulationIndex: parseFloat(dom.resonantBodyModIndex.value), modulationType: 'sine' }; break;
+                case 'formantvoice':
+                    monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.formantVoiceHarmonicity.value), modulationIndex: parseFloat(dom.formantVoiceModIndex.value), modulationType: 'triangle' }; break; // Triangle can sometimes give softer formant-like results
+                default: monoSynthOscSettings = { type: 'sine' }; 
+            }
+            voiceSpecificOptions.oscillator = monoSynthOscSettings;
+            voiceSpecificOptions.envelope = { attack: 0.01, decay: 0.1, sustain: 0.4, release: 0.8 }; // Standard envelope for MonoSynth based voices
+            
+            try {
+                if (Object.keys(voiceSpecificOptions).length > 0) {
+                    synth.set(voiceSpecificOptions); 
+                    console.log("APPLY_OSC_SETTINGS: Applied voice-specific options to PolySynth:", voiceSpecificOptions);
+                }
+                synth.volume.value = parseFloat(dom.volume.value);
+            } catch(e) {
+                console.error("APPLY_OSC_SETTINGS_ERROR: Failed to set options for", selectedOscType, voiceSpecificOptions, e);
+            }
+        }
+        
+        function applyAudioChain() { /* ... (same as before) ... */ if (!synth || !tremoloEffect || !distortionEffect || !bitCrusherEffect || !mainFilter || !chorusEffect || !phaserEffect || !delayEffect || !pingPongDelayEffect || !reverbEffect ) { console.warn("APPLY_CHAIN_WARN: Core audio node(s) not ready."); return; } console.log("APPLY_CHAIN: Rebuilding audio chain..."); const allNodesInChain = [synth, tremoloEffect, distortionEffect, bitCrusherEffect, mainFilter, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect]; allNodesInChain.forEach(node => { try { node.disconnect(); } catch(e) {} }); let currentNode = synth; currentNode.connect(tremoloEffect); currentNode = tremoloEffect; if (dom.distEnable.checked && parseFloat(dom.distWet.value) > 0) { distortionEffect.wet.value = parseFloat(dom.distWet.value); currentNode.connect(distortionEffect); currentNode = distortionEffect; } else { distortionEffect.wet.value = 0; } if (dom.crusherEnable.checked && parseFloat(dom.crusherWet.value) > 0) { bitCrusherEffect.wet.value = parseFloat(dom.crusherWet.value); currentNode.connect(bitCrusherEffect); currentNode = bitCrusherEffect; } else { bitCrusherEffect.wet.value = 0; } const selectedFilterType = dom.filterType.value; if (selectedFilterType !== "none") { let type = "lowpass", rolloff = -24; switch(selectedFilterType) { case 'moog': type = 'lowpass'; rolloff = -24; break; case 'ms20lp': type = 'lowpass'; rolloff = -12; break; case 'ms20hp': type = 'highpass'; rolloff = -12; break; case 'bandpass12': type = 'bandpass'; rolloff = -12; break; case 'bandpass24': type = 'bandpass'; rolloff = -24; break; case 'notch12': type = 'notch'; rolloff = -12; break; case 'notch24': type = 'notch'; rolloff = -24; break; case 'allpass': type = 'allpass'; rolloff = -12; break;} mainFilter.type = type; mainFilter.rolloff = rolloff; mainFilter.frequency.value = parseFloat(dom.filterCutoff.value); mainFilter.Q.value = parseFloat(dom.filterResonance.value); currentNode.connect(mainFilter); currentNode = mainFilter; if (lfo1 && dom.lfo1Enable.checked && dom.lfo1Destination.value === 'filterCutoff') { updateLFO1Connections(); }} else { if (lfo1 && dom.lfo1Destination.value === 'filterCutoff') { updateLFO1Connections(); }} if (dom.chorusEnable.checked && parseFloat(dom.chorusWet.value) > 0) { chorusEffect.wet.value = parseFloat(dom.chorusWet.value); currentNode.connect(chorusEffect); currentNode = chorusEffect; } else { chorusEffect.wet.value = 0; } if (dom.phaserEnable.checked && parseFloat(dom.phaserWet.value) > 0) { phaserEffect.wet.value = parseFloat(dom.phaserWet.value); currentNode.connect(phaserEffect); currentNode = phaserEffect; } else { phaserEffect.wet.value = 0; } if (dom.delayEnable.checked && parseFloat(dom.delayWet.value) > 0) { delayEffect.wet.value = parseFloat(dom.delayWet.value); currentNode.connect(delayEffect); currentNode = delayEffect; } else { delayEffect.wet.value = 0; } if (dom.pingpongEnable.checked && parseFloat(dom.pingpongWet.value) > 0) { pingPongDelayEffect.wet.value = parseFloat(dom.pingpongWet.value); currentNode.connect(pingPongDelayEffect); currentNode = pingPongDelayEffect; } else { pingPongDelayEffect.wet.value = 0; } if (dom.reverbEnable.checked && parseFloat(dom.reverbWet.value) > 0) { reverbEffect.wet.value = parseFloat(dom.reverbWet.value); currentNode.connect(reverbEffect); currentNode = reverbEffect; } else { reverbEffect.wet.value = 0; } currentNode.toDestination(); console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); }
+        function updateLFO1Connections() { /* ... (same - ensure robust checks for mainFilter.frequency) ... */ if (!lfo1 || !synth || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain || !mainFilter ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (mainFilter.frequency) lfo1ToFilterFreqGain.disconnect(mainFilter.frequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune); break; case 'filterCutoff': if (dom.filterType.value !== "none" && mainFilter.frequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(mainFilter.frequency); } break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
+        function createOnScreenKeyboard() { /* ... (same) ... */ dom.keyboard.innerHTML = ''; let whiteKeyIndex = 0; notesLayout.forEach((note) => { const keyElement = document.createElement('div'); keyElement.classList.add('key', note.type === 'white' ? 'white-key' : 'black-key'); keyElement.textContent = note.name; keyElement.dataset.note = note.freqName; if (note.type === 'black') { keyElement.style.left = `${(whiteKeyIndex -1) * 40 + 40 - 14}px`; } else { whiteKeyIndex++; } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = `${note.freqName}${computerKeyboardOctave}`; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = `${note.freqName}${computerKeyboardOctave}`; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = `${note.freqName}${computerKeyboardOctave}`; releaseNote(noteToRelease);}}); dom.keyboard.appendChild(keyElement); }); }
+        function updateKeyVisualState(fullNoteName, isActive) { /* ... (same) ... */ const noteNameMatch = fullNoteName.match(/([A-G]#?)/); if (!noteNameMatch) return; const baseNoteName = noteNameMatch[1]; const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.note === baseNoteName) { const noteOctaveMatch = fullNoteName.match(/\d+$/); if (noteOctaveMatch && parseInt(noteOctaveMatch[0]) === computerKeyboardOctave) { key.classList.toggle('active', isActive); } else if (!isActive && key.classList.contains('active') && key.dataset.note === baseNoteName) { key.classList.remove('active'); } } }); }
+        function playNote(fullNoteName, velocity = 0.75) { /* ... (same) ... */ if (!synth || Tone.context.state !== 'running') return; try { synth.triggerAttack(fullNoteName, Tone.now(), velocity); updateKeyVisualState(fullNoteName, true); } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } }
+        function releaseNote(fullNoteName) { /* ... (same) ... */ if (!synth) return; try { synth.triggerRelease(fullNoteName, Tone.now() + 0.05); updateKeyVisualState(fullNoteName, false); } catch (error) { console.error(`Error releasing ${fullNoteName}:`, error); } }
+        window.addEventListener('keydown', (event) => { /* ... (same) ... */ if (!synth || event.repeat || event.metaKey || event.ctrlKey || event.altKey || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return; const key = event.key.toLowerCase(); if (computerKeyNoteMapping[key] && !pressedComputerKeys.has(key)) { event.preventDefault(); const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${computerKeyboardOctave}`; playNote(fullNoteName); pressedComputerKeys.add(key); } });
+        window.addEventListener('keyup', (event) => { /* ... (same) ... */ if (!synth || document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return; const key = event.key.toLowerCase(); if (computerKeyNoteMapping[key] && pressedComputerKeys.has(key)) { event.preventDefault(); const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${computerKeyboardOctave}`; releaseNote(fullNoteName); pressedComputerKeys.delete(key); } });
+        async function initializeMIDI() { /* ... (same - includes updated error messages) ... */ dom.midiStatus.textContent = "Accessing MIDI..."; if (navigator.requestMIDIAccess) { try { midiAccess = await navigator.requestMIDIAccess({ sysex: false }); dom.midiStatus.textContent = "MIDI Granted. Listening..."; startMIDIListening(); } catch (e) { let specificAdvice = ""; if (e.message && e.message.toLowerCase().includes("permission add-on")) { specificAdvice = " This error often appears in Firefox if MIDI permissions are not set or an add-on like Jazz-MIDI is needed and not configured. Please check your browser's site permissions for MIDI and ensure any required MIDI extensions are active."; } else if (e.name === "SecurityError") { specificAdvice = " MIDI access was denied by a security policy. This can happen if the page is not served over HTTPS, or if MIDI is disabled in browser settings/permissions."; } else { specificAdvice = " Please ensure your MIDI device is connected and check your browser's MIDI settings and site permissions."; } dom.midiStatus.textContent = `MIDI Access Error.${specificAdvice}`; console.error("Could not access MIDI devices:", e.name, e.message, specificAdvice); } } else { dom.midiStatus.textContent = "Web MIDI API not supported in this browser. Use Chrome/Edge for MIDI."; console.warn("Web MIDI API not supported in this browser!"); } }
+        function startMIDIListening() { /* ... (same) ... */ if (!midiAccess) return; const inputs = midiAccess.inputs.values(); let deviceFound = false; for (let input = inputs.next(); input && !input.done; input = inputs.next()) { deviceFound = true; input.value.onmidimessage = onMIDIMessage; } if(deviceFound) dom.midiStatus.textContent = "Listening to MIDI devices."; else dom.midiStatus.textContent = "No MIDI inputs found."; midiAccess.onstatechange = (event) => { dom.midiStatus.textContent = `MIDI: ${event.port.name} ${event.port.state}. Re-scan...`; startMIDIListening(); }; }
+        function midiNoteToNoteNameAndOctave(midiNote) { /* ... (same) ... */ const noteIndex = midiNote % 12; const octave = Math.floor(midiNote / 12) - 1; return `${noteNamesSharp[noteIndex]}${octave}`; }
+        function onMIDIMessage(message) { /* ... (same) ... */ if (!synth) return; const [command, note, velocity] = message.data; const noteNameFull = midiNoteToNoteNameAndOctave(note); const scaledVelocity = velocity / 127; if ((command & 0xF0) === 0x90 && velocity > 0) { playNote(noteNameFull, scaledVelocity); } else if ((command & 0xF0) === 0x80 || ((command & 0xF0) === 0x90 && velocity === 0)) { releaseNote(noteNameFull); } }
+        
+        // --- UI Control Event Listeners ---
+        dom.startAudioButton.addEventListener('click', async () => { dom.audioContextMessageOverlay.classList.remove('visible'); const success = await initializeAudio(); if(success) console.log("Audio init OK from Start."); else console.error("Audio init FAILED from Start."); });
+        dom.oscType.addEventListener('change', updateOscillatorType);
+        // Standard Osc params (PWM, FM)
+        dom.pwmSpeed.addEventListener('input', () => { updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
+        dom.fmHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); applyCurrentOscillatorSpecificSettings(dom.oscType.value);});
+        dom.fmModIndex.addEventListener('input', () => { updateSliderDisplay(dom.fmModIndex, dom.fmModIndexDisplay, '', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value);});
+        // Braids-inspired Osc params
+        dom.supersawCount.addEventListener('input', () => { updateSliderDisplay(dom.supersawCount, dom.supersawCountDisplay, '', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value);});
+        dom.supersawSpread.addEventListener('input', () => { updateSliderDisplay(dom.supersawSpread, dom.supersawSpreadDisplay, ' cents', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value);});
+        dom.resonantBodyHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.resonantBodyHarmonicity, dom.resonantBodyHarmonicityDisplay, '', 1); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
+        dom.resonantBodyModIndex.addEventListener('input', () => { updateSliderDisplay(dom.resonantBodyModIndex, dom.resonantBodyModIndexDisplay, '', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
+        dom.formantVoiceHarmonicity.addEventListener('input', () => { updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
+        dom.formantVoiceModIndex.addEventListener('input', () => { updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0); applyCurrentOscillatorSpecificSettings(dom.oscType.value); });
+
+
+        dom.octaveUp.addEventListener('click', () => { if (computerKeyboardOctave < 8) { computerKeyboardOctave++; dom.octaveDisplay.textContent = computerKeyboardOctave; }});
+        dom.octaveDown.addEventListener('click', () => { if (computerKeyboardOctave > 0) { computerKeyboardOctave--; dom.octaveDisplay.textContent = computerKeyboardOctave; }});
+        function updateVolume() { const volVal = parseFloat(dom.volume.value); if (synth) { try { synth.volume.value = volVal;} catch(e) {console.error("Error setting synth volume:", e)}} dom.volumeDisplay.textContent = `${volVal} dB`; }
+        dom.volume.addEventListener('input', updateVolume);
+
+        dom.filterType.addEventListener('change', applyAudioChain);
+        dom.filterCutoff.addEventListener('input', (e) => { updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); if (mainFilter && mainFilter.frequency) { try { mainFilter.frequency.value = parseFloat(e.target.value); } catch(er) {}} });
+        dom.filterResonance.addEventListener('input', (e) => { updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q'); if (mainFilter && mainFilter.Q) { try { mainFilter.Q.value = parseFloat(e.target.value); } catch(er) {}} });
+
+        dom.lfo1Enable.addEventListener('change', updateLFO1Connections); 
+        dom.lfo1Wave.addEventListener('change', updateLFO1Connections); 
+        dom.lfo1PulseWidth.addEventListener('input', () => { updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); if (lfo1 && dom.lfo1Wave.value === 'pulse') lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value);});
+        dom.lfo1PwmFreq.addEventListener('input', () => { updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz'); if (lfo1 && dom.lfo1Wave.value === 'pwm') lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value);});
+        dom.lfo1Rate.addEventListener('input', () => { updateSliderDisplay(dom.lfo1Rate, dom.lfo1RateDisplay, 'Hz'); updateLFO1Connections(); });
+        dom.lfo1Depth.addEventListener('input', () => { updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2); updateLFO1Connections(); });
+        dom.lfo1Destination.addEventListener('change', updateLFO1Connections);
+
+        // Effect Control Listeners (ensure all use `dom.` prefix)
+        dom.distEnable.addEventListener('change', applyAudioChain); dom.distAmount.addEventListener('input', () => { updateSliderDisplay(dom.distAmount, dom.distAmountDisplay, '', 2); if(distortionEffect) distortionEffect.distortion = parseFloat(dom.distAmount.value); }); dom.distWet.addEventListener('input', () => { updateSliderDisplay(dom.distWet, dom.distWetDisplay, '', 2); applyAudioChain(); });
+        dom.crusherEnable.addEventListener('change', applyAudioChain); dom.crusherBits.addEventListener('input', () => { updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, ' bits', 0); if(bitCrusherEffect) bitCrusherEffect.bits.value = parseInt(dom.crusherBits.value); }); dom.crusherWet.addEventListener('input', () => { updateSliderDisplay(dom.crusherWet, dom.crusherWetDisplay, '', 2); applyAudioChain(); });
+        dom.chorusEnable.addEventListener('change', applyAudioChain); dom.chorusRate.addEventListener('input', () => { updateSliderDisplay(dom.chorusRate, dom.chorusRateDisplay, 'Hz'); if(chorusEffect) chorusEffect.frequency.value = parseFloat(dom.chorusRate.value); }); dom.chorusDepth.addEventListener('input', () => { updateSliderDisplay(dom.chorusDepth, dom.chorusDepthDisplay, '', 2); if(chorusEffect) chorusEffect.depth = parseFloat(dom.chorusDepth.value); }); dom.chorusFeedback.addEventListener('input', () => { updateSliderDisplay(dom.chorusFeedback, dom.chorusFeedbackDisplay, '', 2); if(chorusEffect) chorusEffect.feedback.value = parseFloat(dom.chorusFeedback.value); }); dom.chorusWet.addEventListener('input', () => { updateSliderDisplay(dom.chorusWet, dom.chorusWetDisplay, '', 2); applyAudioChain(); });
+        dom.phaserEnable.addEventListener('change', applyAudioChain); dom.phaserFrequency.addEventListener('input', () => { updateSliderDisplay(dom.phaserFrequency, dom.phaserFrequencyDisplay, 'Hz'); if(phaserEffect) phaserEffect.frequency.value = parseFloat(dom.phaserFrequency.value); }); dom.phaserOctaves.addEventListener('input', () => { updateSliderDisplay(dom.phaserOctaves, dom.phaserOctavesDisplay, '', 1); if(phaserEffect) phaserEffect.octaves = parseFloat(dom.phaserOctaves.value); }); dom.phaserBaseFreq.addEventListener('input', () => { updateSliderDisplay(dom.phaserBaseFreq, dom.phaserBaseFreqDisplay, 'Hz',0); if(phaserEffect) phaserEffect.baseFrequency = parseFloat(dom.phaserBaseFreq.value); }); dom.phaserWet.addEventListener('input', () => { updateSliderDisplay(dom.phaserWet, dom.phaserWetDisplay, '', 2); applyAudioChain(); });
+        dom.delayEnable.addEventListener('change', applyAudioChain); dom.delayTime.addEventListener('input', () => { updateSliderDisplay(dom.delayTime, dom.delayTimeDisplay, 's', 2); if(delayEffect) delayEffect.delayTime.value = parseFloat(dom.delayTime.value); }); dom.delayFeedback.addEventListener('input', () => { updateSliderDisplay(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2); if(delayEffect) delayEffect.feedback.value = parseFloat(dom.delayFeedback.value); }); dom.delayWet.addEventListener('input', () => { updateSliderDisplay(dom.delayWet, dom.delayWetDisplay, '', 2); applyAudioChain(); });
+        dom.pingpongEnable.addEventListener('change', applyAudioChain); dom.pingpongDelayTime.addEventListener('input', () => { updateSliderDisplay(dom.pingpongDelayTime, dom.pingpongDelayTimeDisplay, 's', 2); if(pingPongDelayEffect) pingPongDelayEffect.delayTime.value = parseFloat(dom.pingpongDelayTime.value); }); dom.pingpongFeedback.addEventListener('input', () => { updateSliderDisplay(dom.pingpongFeedback, dom.pingpongFeedbackDisplay, '', 2); if(pingPongDelayEffect) pingPongDelayEffect.feedback.value = parseFloat(dom.pingpongFeedback.value); }); dom.pingpongWet.addEventListener('input', () => { updateSliderDisplay(dom.pingpongWet, dom.pingpongWetDisplay, '', 2); applyAudioChain(); });
+        dom.reverbEnable.addEventListener('change', applyAudioChain); dom.reverbDecay.addEventListener('input', () => { updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); if(reverbEffect) reverbEffect.decay = parseFloat(dom.reverbDecay.value); }); dom.reverbWet.addEventListener('input', () => { updateSliderDisplay(dom.reverbWet, dom.reverbWetDisplay, '', 2); applyAudioChain(); });
+
+        // --- Initial Page Load ---
+        window.addEventListener('load', () => {
+            console.log("Window loaded."); createOnScreenKeyboard(); dom.octaveDisplay.textContent = computerKeyboardOctave;
+            // Update all displays for initial values
+            updateVolume(); 
+            updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); updateSliderDisplay(dom.fmModIndex, dom.fmModIndexDisplay, '', 0);
+            updateSliderDisplay(dom.supersawCount, dom.supersawCountDisplay, '', 0); updateSliderDisplay(dom.supersawSpread, dom.supersawSpreadDisplay, ' cents', 0);
+            updateSliderDisplay(dom.resonantBodyHarmonicity, dom.resonantBodyHarmonicityDisplay, '', 1); updateSliderDisplay(dom.resonantBodyModIndex, dom.resonantBodyModIndexDisplay, '', 0);
+            updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0);
+            updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q');
+            updateSliderDisplay(dom.lfo1Rate, dom.lfo1RateDisplay, 'Hz'); updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2);
+            updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz');
+            updateSliderDisplay(dom.distAmount, dom.distAmountDisplay, '', 2); updateSliderDisplay(dom.distWet, dom.distWetDisplay, '', 2);
+            updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, 'bits', 0); updateSliderDisplay(dom.crusherWet, dom.crusherWetDisplay, '', 2);
+            updateSliderDisplay(dom.chorusRate, dom.chorusRateDisplay, 'Hz'); updateSliderDisplay(dom.chorusDepth, dom.chorusDepthDisplay, '', 2); updateSliderDisplay(dom.chorusFeedback, dom.chorusFeedbackDisplay, '', 2); updateSliderDisplay(dom.chorusWet, dom.chorusWetDisplay, '', 2);
+            updateSliderDisplay(dom.phaserFrequency, dom.phaserFrequencyDisplay, 'Hz'); updateSliderDisplay(dom.phaserOctaves, dom.phaserOctavesDisplay, '', 1); updateSliderDisplay(dom.phaserBaseFreq, dom.phaserBaseFreqDisplay, 'Hz', 0); updateSliderDisplay(dom.phaserWet, dom.phaserWetDisplay, '', 2);
+            updateSliderDisplay(dom.delayTime, dom.delayTimeDisplay, 's', 2); updateSliderDisplay(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2); updateSliderDisplay(dom.delayWet, dom.delayWetDisplay, '', 2);
+            updateSliderDisplay(dom.pingpongDelayTime, dom.pingpongDelayTimeDisplay, 's', 2); updateSliderDisplay(dom.pingpongFeedback, dom.pingpongFeedbackDisplay, '', 2); updateSliderDisplay(dom.pingpongWet, dom.pingpongWetDisplay, '', 2);
+            updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); updateSliderDisplay(dom.reverbWet, dom.reverbWetDisplay, '', 2);
+            
+            // Initial visibility of contextual controls
+            dom.pwmControls.classList.toggle('hidden', dom.oscType.value !== 'pwm'); 
+            dom.fmControls.classList.toggle('hidden', dom.oscType.value !== 'fmsine');
+            dom.supersawControls.classList.toggle('hidden', dom.oscType.value !== 'supersaw');
+            dom.resonantBodyControls.classList.toggle('hidden', dom.oscType.value !== 'resonantbody');
+            dom.formantVoiceControls.classList.toggle('hidden', dom.oscType.value !== 'formantvoice');
+            dom.lfo1PulseWidthControls.classList.toggle('hidden', dom.lfo1Wave.value !== 'pulse'); 
+            dom.lfo1PwmFreqControls.classList.toggle('hidden', dom.lfo1Wave.value !== 'pwm'); 
+            
+            showMessage(dom.audioContextMessageOverlay, "Click 'Start' to enable audio.", "Start", async () => {
+                const success = await initializeAudio();
+                if (!success) console.error("Initial audio setup FAILED after user interaction on load.");
+                else console.log("Initial audio setup OK after user interaction on load.");
+            });
+        });
+    </script>
+</body>
+</html>
