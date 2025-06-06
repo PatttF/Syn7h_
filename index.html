@@ -64,8 +64,9 @@
         .controls-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; width: 100%; max-width: 1400px; }
         .control-group { display: flex; flex-direction: column; align-items: stretch; padding: 12px; background-color: #2d3748; border: 1px solid #4a5568; border-radius: 8px; }
         .control-group label, .control-group .group-title { margin-bottom: 8px; font-size: 0.875rem; color: #a0aec0; font-weight: 600; text-align: center; text-transform: uppercase; letter-spacing: 0.05em;}
-        .control-group select, .control-group button, .control-group input[type="range"], .control-group input[type="checkbox"], .control-group input[type="file"] { padding: 8px 6px; border-radius: 6px; border: 1px solid #4a5568; background-color: #1a202c; font-size: 0.875rem; cursor: pointer; color: #e2e8f0; width: 100%; box-sizing: border-box; margin-bottom: 4px; }
+        .control-group select, .control-group button, .control-group input[type="range"], .control-group input[type="checkbox"], .control-group input[type="file"], .control-group input[type="text"] { padding: 8px 6px; border-radius: 6px; border: 1px solid #4a5568; background-color: #1a202c; font-size: 0.875rem; cursor: pointer; color: #e2e8f0; width: 100%; box-sizing: border-box; margin-bottom: 4px; }
         .control-group input[type="file"] { padding: 4px; }
+        .control-group input[type="text"] { cursor: text; }
         .control-group input[type="checkbox"] { width: auto; align-self:center; height: 20px; padding:0; margin-bottom: 8px; accent-color: #f56565;}
         .control-group button { background-color: #f56565; color: #1a202c; font-weight: bold; border: none;}
         .control-group button:hover { background-color: #dd5858; }
@@ -109,6 +110,10 @@
                 <span class="group-title">Oscillator & MIDI Learn</span>
                 <label for="preset-select" class="text-sm">Preset</label>
                 <select id="preset-select" class="mb-2"></select>
+                <div class="flex items-center mb-2">
+                    <input type="text" id="preset-name-input" placeholder="New Preset Name..." class="flex-grow">
+                    <button id="save-preset-button" class="ml-2 w-auto px-3">Save</button>
+                </div>
                 <button id="midi-learn-button" class="mb-2">MIDI Learn</button>
                 <div id="midi-learn-status" class="text-xs mb-2 h-6"></div> 
                 <label for="osc-type">Type</label>
@@ -235,6 +240,7 @@
         let paramKeyToLearn = null; 
         let midiMappings = {}; 
         let sequencerLoop;
+        let userPresets = {};
 
 
         // --- DOM Element Grabbing (Centralized) ---
@@ -268,6 +274,8 @@
             keyboard: document.getElementById('keyboard'), audioContextMessageOverlay: document.getElementById('audio-context-message-overlay'), startAudioButton: document.getElementById('start-audio-button'), 
             midiStatus: document.getElementById('midi-status'), midiLearnButton: document.getElementById('midi-learn-button'), midiLearnStatus: document.getElementById('midi-learn-status'),
             presetSelect: document.getElementById('preset-select'),
+            presetNameInput: document.getElementById('preset-name-input'),
+            savePresetButton: document.getElementById('save-preset-button'),
             sequencerEnable: document.getElementById('sequencer-enable'), sequencerRate: document.getElementById('sequencer-rate'), sequencerRateDisplay: document.getElementById('sequencer-rate-display'), sequencerGateProb: document.getElementById('sequencer-gate-prob'), sequencerGateProbDisplay: document.getElementById('sequencer-gate-prob-display'), sequencerNoteDuration: document.getElementById('sequencer-note-duration'), sequencerNoteDurationDisplay: document.getElementById('sequencer-note-duration-display'), sequencerPitchSpread: document.getElementById('sequencer-pitch-spread'), sequencerPitchSpreadDisplay: document.getElementById('sequencer-pitch-spread-display'), sequencerScale: document.getElementById('sequencer-scale')
         };
         
@@ -694,6 +702,7 @@
         };
 
         const presets = {
+            "Init": { ...defaultSettings },
             "Classic Saw Lead": { ...defaultSettings, oscType: "sawtooth", ampEnvAttack: 0.01, ampEnvDecay: 0.3, ampEnvSustain: 0.7, ampEnvRelease: 0.5, filterType: "moog", filterCutoff: 3500, filterResonance: 2, filterEnvAmount: 2.5 },
             "PWM Pad": { ...defaultSettings, oscType: "pwm", pwmSpeed: 0.5, ampEnvAttack: 0.8, ampEnvDecay: 1.5, ampEnvSustain: 0.6, ampEnvRelease: 2, chorusEnable: true, chorusWet: 0.4, reverbEnable: true, reverbDecay: 3, reverbWet: 0.3 },
             "FM Bell": { ...defaultSettings, oscType: "fmsine", fmHarmonicity: 3.5, fmModIndex: 15, ampEnvAttack: 0.005, ampEnvDecay: 1.0, ampEnvSustain: 0, ampEnvRelease: 1.2, reverbEnable: true, reverbDecay: 2, reverbWet: 0.25 },
@@ -742,7 +751,7 @@
                     if (paramDef.type === 'range') {
                         element.value = value;
                         const displayEl = dom[paramDef.elementId + 'Display'];
-                        if (displayEl) { // Check if display element exists
+                        if (displayEl) { 
                             const decimals = paramDefinitions[paramKey].decimals === 0 ? 0 : (paramDefinitions[paramKey].decimals || (Number.isInteger(value) ? 0 : 2));
                             updateSliderDisplay(element, displayEl, paramDefinitions[paramKey].unit || '', decimals);
                         }
@@ -769,6 +778,50 @@
             loadPreset(e.target.value); 
             releaseAndRefocus(e);
         });
+        dom.savePresetButton.addEventListener('click', (e) => {
+            const name = dom.presetNameInput.value.trim();
+            if (name) {
+                savePreset(name);
+                dom.presetNameInput.value = '';
+            } else {
+                dom.midiLearnStatus.textContent = "Please enter a name to save preset.";
+                setTimeout(() => { dom.midiLearnStatus.textContent = ""; }, 2000);
+            }
+             releaseAndRefocus(e);
+        });
+
+        function savePreset(name) {
+            let currentSettings = {};
+            for (const paramKey in paramDefinitions) {
+                const element = dom[paramDefinitions[paramKey].elementId];
+                if (element) {
+                    currentSettings[paramKey] = (element.type === 'checkbox') ? element.checked : element.value;
+                }
+            }
+            userPresets[name] = currentSettings;
+            try {
+                localStorage.setItem('syn7h_userPresets', JSON.stringify(userPresets));
+                populatePresetDropdown(); // Refresh dropdown
+                dom.presetSelect.value = name;
+                dom.midiLearnStatus.textContent = `Preset '${name}' saved!`;
+            } catch (e) {
+                dom.midiLearnStatus.textContent = `Error saving preset.`;
+                console.error("Error saving user presets:", e);
+            }
+        }
+
+        function loadUserPresets() {
+            try {
+                const savedUserPresets = localStorage.getItem('syn7h_userPresets');
+                if (savedUserPresets) {
+                    userPresets = JSON.parse(savedUserPresets);
+                    console.log("User presets loaded from localStorage.");
+                }
+            } catch (e) {
+                console.error("Error loading user presets from localStorage:", e);
+                userPresets = {};
+            }
+        }
 
 
         // --- Initial Page Load ---
@@ -777,7 +830,8 @@
             console.log("Window loaded."); 
             dom.octaveDisplay.textContent = startingOctave; 
             createOnScreenKeyboard(); 
-            populatePresetDropdown();
+            loadUserPresets(); // Load user presets from localStorage first
+            populatePresetDropdown(); // Then populate the dropdown
             
             // Load the "Init" preset by default
             loadPreset("Init"); 
