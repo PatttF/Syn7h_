@@ -594,7 +594,7 @@
         function onMIDIMessage(message) { /* ... (MIDI Learn logic and note on/off unchanged) ... */ if (!synth) return; const [command, data1, data2] = message.data; const type = command & 0xF0; const channel = command & 0x0F; if (isGlobalMidiLearnActive && paramKeyToLearn && type === 0xB0) { const ccNumber = data1; const currentParamDef = paramDefinitions[paramKeyToLearn]; midiMappings[ccNumber] = paramKeyToLearn; saveMidiMappings(); console.log(`MIDI LEARN: Mapped CC ${ccNumber} to ${currentParamDef.label}`); dom.midiLearnStatus.textContent = `Learned: CC ${ccNumber} -> ${currentParamDef.label}`; isGlobalMidiLearnActive = false; paramKeyToLearn = null; dom.midiLearnButton.textContent = "MIDI Learn"; dom.midiLearnButton.classList.remove('learn-active'); setTimeout(() => { dom.midiLearnStatus.textContent = ""; }, 2000); } else if (!isGlobalMidiLearnActive && type === 0xB0) { const ccNumber = data1; const ccValue = data2; const mappedParamKey = midiMappings[ccNumber]; if (mappedParamKey) { updateParamFromMidiCC(mappedParamKey, ccValue); } } else if ((type === 0x90 && data2 > 0)) { const noteNameFull = midiNoteToNoteNameAndOctave(data1); const scaledVelocity = data2 / 127; playNote(noteNameFull, scaledVelocity); } else if (type === 0x80 || (type === 0x90 && data2 === 0)) { const noteNameFull = midiNoteToNoteNameAndOctave(data1); releaseNote(noteNameFull); } }
         function updateParamFromMidiCC(paramKey, ccValue) { /* ... (same) ... */ const paramDef = paramDefinitions[paramKey]; if (!paramDef) { console.warn(`MIDI CC: No param def for key ${paramKey}`); return; } const element = dom[paramDef.elementId]; if (!element) { console.warn(`MIDI CC: Element ID ${paramDef.elementId} not found for ${paramKey}`); return; } let normalizedValue; if (paramDef.type === 'range') { const min = paramDef.min; const max = paramDef.max; normalizedValue = (ccValue / 127) * (max - min) + min; element.value = normalizedValue; } else if (paramDef.type === 'checkbox') { normalizedValue = ccValue >= 64; element.checked = normalizedValue; } else if (paramDef.type === 'select') { const optionCount = paramDef.options.length; const optionIndex = Math.floor((ccValue / 127) * (optionCount -1)); normalizedValue = paramDef.options[Math.max(0, Math.min(optionIndex, optionCount - 1))]; element.value = normalizedValue; } element.dispatchEvent(new Event(paramDef.eventToDispatch, { bubbles: true }));}
         function toggleGlobalMidiLearnMode() { /* ... (same) ... */ isGlobalMidiLearnActive = !isGlobalMidiLearnActive; if (isGlobalMidiLearnActive) { dom.midiLearnButton.textContent = "Learning... Click a Control"; dom.midiLearnButton.classList.add('learn-active'); dom.midiLearnStatus.textContent = "Click a synth control to map it."; paramKeyToLearn = null; } else { dom.midiLearnButton.textContent = "MIDI Learn"; dom.midiLearnButton.classList.remove('learn-active'); dom.midiLearnStatus.textContent = paramKeyToLearn ? `Cancelled learn for ${paramDefinitions[paramKeyToLearn]?.label || 'Unknown'}` : ""; paramKeyToLearn = null; setTimeout(() => { if(!isGlobalMidiLearnActive) dom.midiLearnStatus.textContent = ""; }, 2000); } }
-        function setupMidiLearnForElement(paramKey) { /* ... (same) ... */ releaseAllComputerKeys(); if (!isGlobalMidiLearnActive) return; paramKeyToLearn = paramKey; const paramDef = paramDefinitions[paramKey]; dom.midiLearnButton.textContent = `Listening for CC... (${paramDef.label})`; dom.midiLearnStatus.textContent = `Move MIDI control for: ${paramDef.label}`; console.log(`MIDI LEARN: Waiting for CC for parameter: ${paramDef.label} (Key: ${paramKey})`); }
+        function setupMidiLearnForElement(paramKey) { /* ... (same) ... */ releaseAllComputerKeys(); if (!isGlobalMidiLearnActive) return; paramKeyToLearn = paramKey; const paramDef = paramDefinitions[paramKey]; dom.midiLearnButton.textContent = `Listening for CC... (${paramDef.label})`; dom.midiLearnStatus.textContent = `Move MIDI control for: ${paramDef.label}`; console.log(`MIDI LEARN: Waiting for CC for parameter: ${paramKey} (Key: ${paramKey})`); }
         function saveMidiMappings() { /* ... (same) ... */ try { localStorage.setItem('syn7h_midiMappings', JSON.stringify(midiMappings)); console.log("MIDI Mappings saved."); } catch (e) { console.error("Error saving MIDI mappings:", e); } }
         function loadMidiMappings() { /* ... (same) ... */ try { const savedMappings = localStorage.getItem('syn7h_midiMappings'); if (savedMappings) { midiMappings = JSON.parse(savedMappings); console.log("MIDI Mappings loaded:", midiMappings); } else { midiMappings = {}; console.log("No saved MIDI mappings found."); } } catch (e) { console.error("Error loading MIDI mappings:", e); midiMappings = {}; } }
 
@@ -723,19 +723,36 @@
             initOption.textContent = "Init";
             dom.presetSelect.appendChild(initOption);
 
+            // Factory Presets
+            const factoryGroup = document.createElement('optgroup');
+            factoryGroup.label = "--- Factory Presets ---";
             for (const presetName in presets) {
                 if (presetName !== "Init") { 
                     const option = document.createElement('option');
                     option.value = presetName;
                     option.textContent = presetName;
-                    dom.presetSelect.appendChild(option);
+                    factoryGroup.appendChild(option);
                 }
+            }
+            dom.presetSelect.appendChild(factoryGroup);
+
+            // User Presets
+            if (Object.keys(userPresets).length > 0) {
+                const userGroup = document.createElement('optgroup');
+                userGroup.label = "--- My Presets ---";
+                for (const presetName in userPresets) {
+                    const option = document.createElement('option');
+                    option.value = presetName;
+                    option.textContent = presetName;
+                    userGroup.appendChild(option);
+                }
+                dom.presetSelect.appendChild(userGroup);
             }
         }
 
         function loadPreset(presetName) {
             console.log("Loading preset:", presetName);
-            const settings = presets[presetName] || defaultSettings;
+            const settings = presets[presetName] || userPresets[presetName] || defaultSettings;
             
             if (dom.oscType.value !== settings.oscType) {
                 dom.oscType.value = settings.oscType;
@@ -830,13 +847,11 @@
             console.log("Window loaded."); 
             dom.octaveDisplay.textContent = startingOctave; 
             createOnScreenKeyboard(); 
-            loadUserPresets(); // Load user presets from localStorage first
-            populatePresetDropdown(); // Then populate the dropdown
+            loadUserPresets();
+            populatePresetDropdown();
             
-            // Load the "Init" preset by default
             loadPreset("Init"); 
             
-            // Initial visibility of contextual controls based on the "Init" preset
             dom.pwmControls.classList.toggle('hidden', dom.oscType.value !== 'pwm'); 
             dom.fmControls.classList.toggle('hidden', dom.oscType.value !== 'fmsine');
             dom.supersawControls.classList.toggle('hidden', dom.oscType.value !== 'supersaw');
