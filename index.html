@@ -107,6 +107,8 @@
             <!-- OSCILLATOR GROUP -->
             <div class="control-group">
                 <span class="group-title">Oscillator & MIDI Learn</span>
+                <label for="preset-select" class="text-sm">Preset</label>
+                <select id="preset-select" class="mb-2"></select>
                 <button id="midi-learn-button" class="mb-2">MIDI Learn</button>
                 <div id="midi-learn-status" class="text-xs mb-2 h-6"></div> 
                 <label for="osc-type">Type</label>
@@ -236,7 +238,7 @@
 
 
         // --- DOM Element Grabbing (Centralized) ---
-        const dom = { /* ... (all DOM elements) ... */
+        const dom = { 
             oscType: document.getElementById('osc-type'), pwmControls: document.getElementById('pwm-controls'), pwmSpeed: document.getElementById('pwm-speed'), pwmSpeedDisplay: document.getElementById('pwm-speed-display'), fmControls: document.getElementById('fm-controls'), fmHarmonicity: document.getElementById('fm-harmonicity'), fmHarmonicityDisplay: document.getElementById('fm-harmonicity-display'), fmModIndex: document.getElementById('fm-mod-index'), fmModIndexDisplay: document.getElementById('fm-mod-index-display'), 
             supersawControls: document.getElementById('supersaw-controls'), supersawCount: document.getElementById('supersaw-count'), supersawCountDisplay: document.getElementById('supersaw-count-display'), supersawSpread: document.getElementById('supersaw-spread'), supersawSpreadDisplay: document.getElementById('supersaw-spread-display'),
             resonantBodyControls: document.getElementById('resonantbody-controls'), resonantBodyHarmonicity: document.getElementById('resonantbody-harmonicity'), resonantBodyHarmonicityDisplay: document.getElementById('resonantbody-harmonicity-display'), resonantBodyModIndex: document.getElementById('resonantbody-mod-index'), resonantBodyModIndexDisplay: document.getElementById('resonantbody-mod-index-display'),
@@ -265,6 +267,7 @@
             reverbEnable: document.getElementById('reverb-enable'), reverbDecay: document.getElementById('reverb-decay'), reverbDecayDisplay: document.getElementById('reverb-decay-display'), reverbWet: document.getElementById('reverb-wet'), reverbWetDisplay: document.getElementById('reverb-wet-display'), 
             keyboard: document.getElementById('keyboard'), audioContextMessageOverlay: document.getElementById('audio-context-message-overlay'), startAudioButton: document.getElementById('start-audio-button'), 
             midiStatus: document.getElementById('midi-status'), midiLearnButton: document.getElementById('midi-learn-button'), midiLearnStatus: document.getElementById('midi-learn-status'),
+            presetSelect: document.getElementById('preset-select'),
             sequencerEnable: document.getElementById('sequencer-enable'), sequencerRate: document.getElementById('sequencer-rate'), sequencerRateDisplay: document.getElementById('sequencer-rate-display'), sequencerGateProb: document.getElementById('sequencer-gate-prob'), sequencerGateProbDisplay: document.getElementById('sequencer-gate-prob-display'), sequencerNoteDuration: document.getElementById('sequencer-note-duration'), sequencerNoteDurationDisplay: document.getElementById('sequencer-note-duration-display'), sequencerPitchSpread: document.getElementById('sequencer-pitch-spread'), sequencerPitchSpreadDisplay: document.getElementById('sequencer-pitch-spread-display'), sequencerScale: document.getElementById('sequencer-scale')
         };
         
@@ -339,8 +342,9 @@
             pentatonicMinor: [0, 3, 5, 7, 10]
         };
 
-        function showMessage(overlayElem, message, buttonText, callback) { /* ... (same) ... */ console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
-        function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { /* ... (same) ... */ if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
+        // --- Helper Functions ---
+        function showMessage(overlayElem, message, buttonText, callback) { console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
+        function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
         
         function releaseAndRefocus(event) {
             releaseAllComputerKeys(); 
@@ -353,7 +357,10 @@
                 }, 0); 
             }
         }
+        function releaseAllComputerKeys() { if (pressedComputerKeys.size > 0) { const keysToRelease = new Set(pressedComputerKeys); keysToRelease.forEach(key => { if (computerKeyNoteMapping[key]) { const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; releaseNote(fullNoteName); } }); pressedComputerKeys.clear(); } }
 
+
+        // --- Audio Initialization and Synth Configuration ---
         async function initializeAudio() {
             console.log("AUDIO_INIT: Starting. Tone.context.state:", Tone.context.state);
             if (Tone.context.state !== 'running') {
@@ -563,62 +570,11 @@
             console.log("APPLY_CHAIN: Finalized. Last node:", currentNode.name || currentNode.constructor.name); 
         }
         function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || synth.disposed || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); if(synth instanceof Tone.PolySynth && synth.detune) lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (synth instanceof Tone.PolySynth && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': if(synth instanceof Tone.PolySynth && synth.detune) {lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune);} else { console.log("LFO to Pitch: Not applicable or detune not a Signal.");} break; case 'filterCutoff': if (synth instanceof Tone.PolySynth && dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); } else { console.log("LFO to Filter: Not applicable on current synth.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
-        function createOnScreenKeyboard() { dom.keyboard.innerHTML = ''; let currentXOffset = 0; const whiteKeyWidth = 38; for (let oct = 0; oct < 4; oct++) { notesLayout.forEach((noteLayout, index) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${noteLayout.freqName}${currentKeyOctave}`; keyElement.textContent = noteLayout.name; if (noteLayout.type === 'white') { keyElement.classList.add('white-key'); keyElement.style.left = `${currentXOffset}px`; dom.keyboard.appendChild(keyElement); currentXOffset += whiteKeyWidth; } else { keyElement.classList.add('black-key'); keyElement.style.left = `${currentXOffset - (whiteKeyWidth/2)}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } dom.keyboard.style.width = `${currentXOffset}px`;}
-        function updateKeyVisualState(fullNoteName, isActive) { const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.fullNote === fullNoteName) { key.classList.toggle('active', isActive); } }); }
-        function playNote(fullNoteName, velocity = 0.75) { 
-            if (!synth || (synth.disposed && !(synth instanceof Tone.GrainPlayer && synth.loaded === false) ) || Tone.context.state !== 'running') { 
-                console.warn("PlayNote: Synth not ready, disposed, or audio context not running. Synth:", synth, "Context state:", Tone.context.state);
-                return;
-            }
-            try { 
-                if (synth instanceof Tone.GrainPlayer) { 
-                    if (synth.loaded) { 
-                        applyCurrentOscillatorSpecificSettings('granular'); 
-                        let duration; let offset = 0;
-                        if (synth.loop && synth.buffer) {
-                            offset = synth.loopStart; 
-                            let loopEndSec = synth.loopEnd; 
-                            duration = loopEndSec > offset ? loopEndSec - offset : synth.buffer.duration - offset + loopEndSec;
-                            if (duration <= 0) duration = synth.buffer.duration - offset; 
-                            if (duration <= 0 || isNaN(duration)) duration = undefined; 
-                        } else if (synth.buffer) {
-                            duration = synth.buffer.duration;
-                        } else { console.warn("PlayNote (GrainPlayer): Buffer not available for duration calculation."); return; }
-                        synth.start(Tone.now(), offset, duration); 
-                    } else { console.warn("PlayNote (GrainPlayer): Buffer not loaded. Cannot play."); return; }
-                } else if (synth instanceof Tone.PolySynth) { 
-                    if (typeof synth.triggerAttack === 'function') {
-                         synth.triggerAttack(fullNoteName, Tone.now(), velocity); 
-                    } else { console.error("PLAYNOTE_FATAL: synth.triggerAttack is NOT a function on PolySynth instance.", synth); }
-                } else if (synth) { 
-                    console.error("PLAYNOTE_ERROR: Synth object is of unexpected type or not fully initialized:", synth);
-                } else { 
-                    console.warn("PlayNote: Synth object is not available.");
-                }
-                updateKeyVisualState(fullNoteName, true); 
-            } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } 
-        }
-        function releaseNote(fullNoteName) { 
-            if (!synth || synth.disposed || Tone.context.state !== 'running') { 
-                console.warn("ReleaseNote: Synth not ready or disposed."); return; 
-            } 
-            try { 
-                 if (synth instanceof Tone.GrainPlayer) {
-                    if (synth.loaded && typeof synth.stop === 'function') synth.stop(Tone.now() + 0.05); 
-                    else console.warn("ReleaseNote (GrainPlayer): Buffer not loaded or stop method missing.");
-                } else if (synth instanceof Tone.PolySynth) {
-                    if (typeof synth.triggerRelease === 'function') {
-                        synth.triggerRelease(fullNoteName, Tone.now() + 0.05); 
-                    } else {
-                        console.error("RELEASENOTE_FATAL: synth.triggerRelease is NOT a function on PolySynth instance.", synth);
-                    }
-                } else if (synth) {
-                     console.error("RELEASENOTE_ERROR: Synth object is of unexpected type or not fully initialized:", synth);
-                }
-                updateKeyVisualState(fullNoteName, false); 
-            } catch (error) { console.error(`Error releasing ${fullNoteName}:`, error); } 
-        }
-        function releaseAllComputerKeys() { if (pressedComputerKeys.size > 0) { console.log("Releasing all computer keys."); const keysToRelease = new Set(pressedComputerKeys); keysToRelease.forEach(key => { if (computerKeyNoteMapping[key]) { const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; releaseNote(fullNoteName); } }); pressedComputerKeys.clear(); } }
+        function createOnScreenKeyboard() { /* ... (same) ... */ dom.keyboard.innerHTML = ''; let currentXOffset = 0; const whiteKeyWidth = 38; for (let oct = 0; oct < 4; oct++) { notesLayout.forEach((noteLayout, index) => { const keyElement = document.createElement('div'); keyElement.classList.add('key'); const currentKeyOctave = startingOctave + oct; keyElement.dataset.fullNote = `${noteLayout.freqName}${currentKeyOctave}`; keyElement.textContent = noteLayout.name; if (noteLayout.type === 'white') { keyElement.classList.add('white-key'); keyElement.style.left = `${currentXOffset}px`; dom.keyboard.appendChild(keyElement); currentXOffset += whiteKeyWidth; } else { keyElement.classList.add('black-key'); keyElement.style.left = `${currentXOffset - (whiteKeyWidth/2)}px`; dom.keyboard.appendChild(keyElement); } const playNoteHandler = async (event) => { event.preventDefault(); const noteToPlay = keyElement.dataset.fullNote; if (Tone.context.state !== 'running' || !synth) { await showMessage(dom.audioContextMessageOverlay, "Audio not active.", "Start", async () => { if(await initializeAudio()) playNote(noteToPlay); }); return; } playNote(noteToPlay); }; const releaseNoteHandler = (event) => { event.preventDefault(); const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease); }; keyElement.addEventListener('mousedown', playNoteHandler); keyElement.addEventListener('touchstart', playNoteHandler, { passive: false }); keyElement.addEventListener('mouseup', releaseNoteHandler); keyElement.addEventListener('touchend', releaseNoteHandler, { passive: false }); keyElement.addEventListener('mouseleave', (e) => { if (keyElement.classList.contains('active')) { const noteToRelease = keyElement.dataset.fullNote; releaseNote(noteToRelease);}}); }); } dom.keyboard.style.width = `${currentXOffset}px`;}
+        function updateKeyVisualState(fullNoteName, isActive) { /* ... (same) ... */ const keys = dom.keyboard.querySelectorAll('.key'); keys.forEach(key => { if (key.dataset.fullNote === fullNoteName) { key.classList.toggle('active', isActive); } }); }
+        function playNote(fullNoteName, velocity = 0.75) { /* ... (same) ... */ if (!synth || (synth.disposed && !(synth instanceof Tone.GrainPlayer && synth.loaded === false) ) || Tone.context.state !== 'running') { console.warn("PlayNote: Synth not ready, disposed, or audio context not running. Synth:", synth, "Context state:", Tone.context.state); return; } try { if (synth instanceof Tone.GrainPlayer) { if (synth.loaded) { applyCurrentOscillatorSpecificSettings('granular'); let duration; let offset = 0; if (synth.loop && synth.buffer) { offset = synth.loopStart; let loopEndSec = synth.loopEnd; duration = loopEndSec > offset ? loopEndSec - offset : synth.buffer.duration - offset + loopEndSec; if (duration <= 0) duration = synth.buffer.duration - offset; if (duration <= 0 || isNaN(duration)) duration = undefined; } else if (synth.buffer) { duration = synth.buffer.duration; } else { console.warn("PlayNote (GrainPlayer): Buffer not available for duration calculation."); return; } synth.start(Tone.now(), offset, duration); } else { console.warn("PlayNote (GrainPlayer): Buffer not loaded. Cannot play."); return; } } else if (synth instanceof Tone.PolySynth) { if (typeof synth.triggerAttack === 'function') { synth.triggerAttack(fullNoteName, Tone.now(), velocity); } else { console.error("PLAYNOTE_FATAL: synth.triggerAttack is NOT a function on PolySynth instance.", synth); } } else if (synth) { console.error("PLAYNOTE_ERROR: Synth object is of unexpected type or not fully initialized:", synth); } else { console.warn("PlayNote: Synth object is not available."); } updateKeyVisualState(fullNoteName, true); } catch (error) { console.error(`Error playing ${fullNoteName}:`, error); } }
+        function releaseNote(fullNoteName) { /* ... (same) ... */ if (!synth || synth.disposed || Tone.context.state !== 'running') { console.warn("ReleaseNote: Synth not ready or disposed."); return; } try { if (synth instanceof Tone.GrainPlayer) { if (synth.loaded && typeof synth.stop === 'function') synth.stop(Tone.now() + 0.05); else console.warn("ReleaseNote (GrainPlayer): Buffer not loaded or stop method missing."); } else if (synth instanceof Tone.PolySynth) { if (typeof synth.triggerRelease === 'function') { synth.triggerRelease(fullNoteName, Tone.now() + 0.05); } else { console.error("RELEASENOTE_FATAL: synth.triggerRelease is NOT a function on PolySynth instance.", synth); } } else if (synth) { console.error("RELEASENOTE_ERROR: Synth object is of unexpected type or not fully initialized:", synth); } updateKeyVisualState(fullNoteName, false); } catch (error) { console.error(`Error releasing ${fullNoteName}:`, error); } }
+        function releaseAllComputerKeys() { if (pressedComputerKeys.size > 0) { const keysToRelease = new Set(pressedComputerKeys); keysToRelease.forEach(key => { if (computerKeyNoteMapping[key]) { const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; releaseNote(fullNoteName); } }); pressedComputerKeys.clear(); } }
         window.addEventListener('keydown', (event) => { if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return; if (!synth || event.repeat || event.metaKey || event.ctrlKey || event.altKey ) return; const key = event.key.toLowerCase(); if (computerKeyNoteMapping[key] && !pressedComputerKeys.has(key)) { event.preventDefault(); const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; playNote(fullNoteName); pressedComputerKeys.add(key); } else if (key === 'z') { if (startingOctave > 0) { startingOctave--; dom.octaveDisplay.textContent = startingOctave; createOnScreenKeyboard(); } event.preventDefault(); } else if (key === 'x') { if (startingOctave < 8) { startingOctave++; dom.octaveDisplay.textContent = startingOctave; createOnScreenKeyboard(); } event.preventDefault(); } });
         window.addEventListener('keyup', (event) => { if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return; if (!synth) return; const key = event.key.toLowerCase(); if (computerKeyNoteMapping[key] && pressedComputerKeys.has(key)) { event.preventDefault(); const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; releaseNote(fullNoteName); pressedComputerKeys.delete(key); } });
         window.addEventListener('blur', releaseAllComputerKeys);
@@ -706,124 +662,113 @@
         dom.delayEnable.addEventListener('change', effectToggleHandler); dom.delayTime.addEventListener('input', (e) => effectParamHandler(dom.delayTime, dom.delayTimeDisplay, 's', 2, delayEffect.delayTime, 'value', e)); dom.delayFeedback.addEventListener('input', (e) => effectParamHandler(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2, delayEffect.feedback, 'value', e)); dom.delayWet.addEventListener('input', (e) => effectWetHandler(dom.delayWet, dom.delayWetDisplay, '', 2, e));
         dom.pingpongEnable.addEventListener('change', effectToggleHandler); dom.pingpongDelayTime.addEventListener('input', (e) => effectParamHandler(dom.pingpongDelayTime, dom.pingpongDelayTimeDisplay, 's', 2, pingPongDelayEffect.delayTime, 'value', e)); dom.pingpongFeedback.addEventListener('input', (e) => effectParamHandler(dom.pingpongFeedback, dom.pingpongFeedbackDisplay, '', 2, pingPongDelayEffect.feedback, 'value', e)); dom.pingpongWet.addEventListener('input', (e) => effectWetHandler(dom.pingpongWet, dom.pingpongWetDisplay, '', 2, e));
         dom.reverbEnable.addEventListener('change', effectToggleHandler); dom.reverbDecay.addEventListener('input', (e) => { updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); if(reverbEffect) reverbEffect.decay = parseFloat(dom.reverbDecay.value); /* No blur */ }); dom.reverbWet.addEventListener('input', (e) => effectWetHandler(dom.reverbWet, dom.reverbWetDisplay, '', 2, e));
-
-         // Sequencer Controls
-        function initializeSequencer() {
-            sequencerLoop = new Tone.Loop(time => {
-                if (!dom.sequencerEnable.checked || !synth) return;
-
-                const gateProb = parseFloat(dom.sequencerGateProb.value) / 100;
-                if (Math.random() > gateProb) return;
-
-                const selectedScaleName = dom.sequencerScale.value;
-                const scaleIntervals = scales[selectedScaleName] || scales.chromatic;
-                const pitchSpread = parseInt(dom.sequencerPitchSpread.value); // Semitones
-                
-                // Generate a random note index within the scale over a couple of octaves for more variety before spread
-                let randomNoteInScale = scaleIntervals[Math.floor(Math.random() * scaleIntervals.length)];
-                let baseMidiNote = (startingOctave + Math.floor(Math.random() * 2)) * 12 + randomNoteInScale; // Base note around current + next octave
-                
-                // Apply pitch spread
-                let randomOffset = Math.floor(Math.random() * (pitchSpread + 1)) - (pitchSpread / 2);
-                let finalMidiNote = Math.round(baseMidiNote + randomOffset); // Ensure integer MIDI note
-                finalMidiNote = Math.max(0, Math.min(127, finalMidiNote)); // Clamp to MIDI range
-
-                const noteName = midiNoteToNoteNameAndOctave(finalMidiNote);
-                const duration = parseFloat(dom.sequencerNoteDuration.value);
-                
-                playSequencerNote(noteName, duration, time);
-
-            }, `${1 / parseFloat(dom.sequencerRate.value)}s`).start(0); // Start loop immediately, rate controls speed
-        }
-
-        function playSequencerNote(note, duration, time) {
-            if (!synth || synth.disposed || Tone.context.state !== 'running') return;
-            console.log(`SEQ: Playing ${note} for ${duration}s at ${time}`);
-            try {
-                if (synth instanceof Tone.PolySynth) {
-                    synth.triggerAttackRelease(note, duration, time);
-                } else if (synth instanceof Tone.GrainPlayer && synth.loaded) {
-                    // For GrainPlayer, "note" might control playbackRate or detune in more advanced setups.
-                    // Here, we just trigger it. Duration is intrinsic to grain settings.
-                    applyCurrentOscillatorSpecificSettings('granular'); // Ensure GrainPlayer params are fresh
-                     synth.start(time); // Start immediately
-                }
-                 updateKeyVisualState(note, true); // Visual feedback for sequencer notes
-                 setTimeout(() => updateKeyVisualState(note, false), duration * 1000 * 0.9); // Remove visual slightly before note ends
-            } catch(e) {
-                console.error("Error playing sequencer note:", e);
-            }
-        }
         
-        function quantizeToScale(midiNote, scaleName, rootNote = 0) { // rootNote 0 = C
-            const scale = scales[scaleName] || scales.chromatic;
-            const octave = Math.floor(midiNote / 12);
-            const noteInOctave = midiNote % 12;
-            let closest = scale[0];
-            let minDist = Infinity;
-            for (let scaleTone of scale) {
-                let dist = Math.abs(noteInOctave - scaleTone);
-                if (dist < minDist) {
-                    minDist = dist;
-                    closest = scaleTone;
-                }
-                // Check distance if wrapped around (e.g. C for a high B)
-                dist = Math.abs(noteInOctave - (scaleTone + 12));
-                 if (dist < minDist) {
-                    minDist = dist;
-                    closest = scaleTone; // Keep original scaleTone, octave will adjust
-                }
-                dist = Math.abs(noteInOctave - (scaleTone - 12));
-                 if (dist < minDist) {
-                    minDist = dist;
-                    closest = scaleTone;
+        // Sequencer Controls
+        function initializeSequencer() { /* ... (same) ... */ sequencerLoop = new Tone.Loop(time => { if (!dom.sequencerEnable.checked || !synth || (synth.disposed && !(synth instanceof Tone.GrainPlayer))) return; const gateProb = parseFloat(dom.sequencerGateProb.value) / 100; if (Math.random() > gateProb) return; const selectedScaleName = dom.sequencerScale.value; const scaleIntervals = scales[selectedScaleName] || scales.chromatic; const pitchSpread = parseInt(dom.sequencerPitchSpread.value); let randomNoteInScale = scaleIntervals[Math.floor(Math.random() * scaleIntervals.length)]; let baseMidiNote = (startingOctave * 12) + 24 + randomNoteInScale; let randomOffset = Math.floor(Math.random() * (pitchSpread + 1)) - Math.floor(pitchSpread / 2); let finalMidiNote = Math.round(baseMidiNote + randomOffset); finalMidiNote = Math.max(0, Math.min(127, finalMidiNote)); const noteName = midiNoteToNoteNameAndOctave(finalMidiNote); const duration = parseFloat(dom.sequencerNoteDuration.value); playSequencerNote(noteName, duration, time);}, `${1 / parseFloat(dom.sequencerRate.value)}s`).start(0); }
+        function playSequencerNote(note, duration, time) { /* ... (same) ... */ if (!synth || synth.disposed || Tone.context.state !== 'running') return; console.log(`SEQ: Playing ${note} for ${duration}s at ${time}`); try { if (synth instanceof Tone.PolySynth) { synth.triggerAttackRelease(note, duration, time); } else if (synth instanceof Tone.GrainPlayer && synth.loaded) { applyCurrentOscillatorSpecificSettings('granular'); synth.start(time); } updateKeyVisualState(note, true); setTimeout(() => updateKeyVisualState(note, false), duration * 1000 * 0.9); } catch(e) { console.error("Error playing sequencer note:", e); }}
+        function quantizeToScale(midiNote, scaleName, rootNote = 0) { /* ... (same) ... */ const scale = scales[scaleName] || scales.chromatic; const octave = Math.floor(midiNote / 12); const noteInOctave = midiNote % 12; let closest = scale[0]; let minDist = Infinity; for (let scaleTone of scale) { let dist = Math.abs(noteInOctave - scaleTone); if (dist < minDist) { minDist = dist; closest = scaleTone; } dist = Math.abs(noteInOctave - (scaleTone + 12)); if (dist < minDist) { minDist = dist; closest = scaleTone; } dist = Math.abs(noteInOctave - (scaleTone - 12)); if (dist < minDist) { minDist = dist; closest = scaleTone;} } let quantizedMidiNote = octave * 12 + closest + rootNote; return Math.max(0, Math.min(127, quantizedMidiNote)); }
+
+        dom.sequencerEnable.addEventListener('change', (e) => { if (e.target.checked) { if (Tone.Transport.state !== "started") { Tone.Transport.start(); } if(sequencerLoop) sequencerLoop.start(0); } else { if(sequencerLoop) sequencerLoop.stop(); } releaseAndRefocus(e); });
+        dom.sequencerRate.addEventListener('input', (e) => { updateSliderDisplay(dom.sequencerRate, dom.sequencerRateDisplay, 'Hz', 1); if (sequencerLoop) { sequencerLoop.interval = `${1 / parseFloat(e.target.value)}s`; }});
+        dom.sequencerGateProb.addEventListener('input', (e) => { updateSliderDisplay(dom.sequencerGateProb, dom.sequencerGateProbDisplay, '%', 0);  });
+        dom.sequencerNoteDuration.addEventListener('input', (e) => { updateSliderDisplay(dom.sequencerNoteDuration, dom.sequencerNoteDurationDisplay, 's', 2);  });
+        dom.sequencerPitchSpread.addEventListener('input', (e) => { updateSliderDisplay(dom.sequencerPitchSpread, dom.sequencerPitchSpreadDisplay, ' semi', 0);  });
+        dom.sequencerScale.addEventListener('change', releaseAndRefocus);
+
+        // Preset System
+        const defaultSettings = { /* ... (all paramDefinitions keys with their default values) ... */
+            oscType: "sine", pwmSpeed: 5, fmHarmonicity: 1.5, fmModIndex: 10, supersawCount: 3, supersawSpread: 25, resonantBodyHarmonicity: 2.7, resonantBodyModIndex: 20, formantVoiceHarmonicity: 1.2, formantVoiceModIndex: 5,
+            granularLoop: false, granularLoopStart: 0, granularLoopEnd: 1, granularReverse: false, granularGrainSize: 0.1, granularOverlap: 0.05, granularDetune: 0, granularPlaybackRate: 1,
+            masterVolume: 0, ampEnvAttack: 0.01, ampEnvDecay: 0.1, ampEnvSustain: 0.4, ampEnvRelease: 0.8,
+            filterType: "none", filterCutoff: 15000, filterResonance: 1, filterEnvAttack: 0.05, filterEnvDecay: 0.2, filterEnvSustain: 0.5, filterEnvRelease: 1, filterEnvAmount: 3,
+            lfo1Enable: false, lfo1Wave: "sine", lfo1PulseWidth: 0.5, lfo1PwmFreq: 2, lfo1Rate: 2, lfo1Depth: 0.5, lfo1Destination: "none",
+            distEnable: false, distAmount: 0, distWet: 0,
+            crusherEnable: false, crusherBits: 8, crusherWet: 0,
+            ringModEnable: false, ringModFrequency: 100, ringModWet: 0,
+            chorusEnable: false, chorusRate: 1.5, chorusDepth: 0.7, chorusFeedback: 0.2, chorusWet: 0,
+            phaserEnable: false, phaserFrequency: 0.5, phaserOctaves: 3, phaserBaseFreq: 350, phaserWet: 0,
+            delayEnable: false, delayTime: 0.25, delayFeedback: 0.3, delayWet: 0,
+            pingpongEnable: false, pingpongDelayTime: 0.35, pingpongFeedback: 0.4, pingpongWet: 0,
+            reverbEnable: false, reverbDecay: 1.5, reverbWet: 0,
+            sequencerEnable: false, sequencerRate: 2, sequencerGateProb: 50, sequencerNoteDuration: 0.1, sequencerPitchSpread: 7, sequencerScale: "chromatic"
+        };
+
+        const presets = {
+            "Classic Saw Lead": { ...defaultSettings, oscType: "sawtooth", ampEnvAttack: 0.01, ampEnvDecay: 0.3, ampEnvSustain: 0.7, ampEnvRelease: 0.5, filterType: "moog", filterCutoff: 3500, filterResonance: 2, filterEnvAmount: 2.5 },
+            "PWM Pad": { ...defaultSettings, oscType: "pwm", pwmSpeed: 0.5, ampEnvAttack: 0.8, ampEnvDecay: 1.5, ampEnvSustain: 0.6, ampEnvRelease: 2, chorusEnable: true, chorusWet: 0.4, reverbEnable: true, reverbDecay: 3, reverbWet: 0.3 },
+            "FM Bell": { ...defaultSettings, oscType: "fmsine", fmHarmonicity: 3.5, fmModIndex: 15, ampEnvAttack: 0.005, ampEnvDecay: 1.0, ampEnvSustain: 0, ampEnvRelease: 1.2, reverbEnable: true, reverbDecay: 2, reverbWet: 0.25 },
+            "Ambient Pad": { ...defaultSettings, oscType: "triangle", ampEnvAttack: 2.5, ampEnvDecay: 3, ampEnvSustain: 0.8, ampEnvRelease: 4, filterType: "ms20lp", filterCutoff: 1000, filterResonance: 1, filterEnvAmount: 1.5, lfo1Enable: true, lfo1Wave: "sine", lfo1Rate: 0.1, lfo1Depth: 0.2, lfo1Destination: "filterCutoff", reverbEnable: true, reverbDecay: 6, reverbWet: 0.5, delayEnable: true, delayTime: 0.7, delayFeedback: 0.6, delayWet: 0.25 },
+            "Resonant Bass": { ...defaultSettings, oscType: "square", ampEnvAttack: 0.01, ampEnvDecay: 0.2, ampEnvSustain: 0.1, ampEnvRelease: 0.3, filterType: "moog", filterCutoff: 200, filterResonance: 8, filterEnvAmount: 4 },
+            "303ish Acid": { ...defaultSettings, oscType: "sawtooth", ampEnvAttack: 0.01, ampEnvDecay: 0.6, ampEnvSustain: 0, ampEnvRelease: 0.3, filterType: "303lp", filterCutoff: 500, filterResonance: 15, filterEnvAttack: 0.01, filterEnvDecay: 0.4, filterEnvSustain: 0, filterEnvRelease: 0.2, filterEnvAmount: 5, distEnable:true, distAmount: 0.2, distWet: 0.3 },
+            "Synth Bass": { ...defaultSettings, oscType: "square", ampEnvAttack: 0.01, ampEnvDecay: 0.25, ampEnvSustain: 0.5, ampEnvRelease: 0.2, filterType: "moog", filterCutoff: 800, filterResonance: 3, filterEnvAmount: 1.5 },
+            "8-Bit Pluck": { ...defaultSettings, oscType: "square", ampEnvAttack: 0.005, ampEnvDecay: 0.1, ampEnvSustain: 0, ampEnvRelease: 0.1, bitCrusherEnable: true, crusherBits: 4, crusherWet: 0.5 },
+            "Wobble Bass": { ...defaultSettings, oscType: "sawtooth", filterType: "moog", filterCutoff: 1200, filterResonance: 6, lfo1Enable: true, lfo1Wave: "sine", lfo1Rate: 8, lfo1Depth: 0.8, lfo1Destination: "filterCutoff", ampEnvAttack: 0.01, ampEnvDecay: 0.1, ampEnvSustain: 0.8, ampEnvRelease: 0.2 },
+            "Spacey FX": { ...defaultSettings, filterType: "bandpass12", filterCutoff: 5000, filterResonance: 15, ampEnvAttack: 0.1, ampEnvSustain: 1, ampEnvRelease: 2, pingpongEnable: true, pingpongDelayTime: 0.2, pingpongFeedback: 0.7, pingpongWet: 0.8, lfo1Enable: true, lfo1Rate: 0.2, lfo1Depth: 1, lfo1Destination: "filterCutoff" },
+            "Bright Brass": { ...defaultSettings, oscType: "supersaw", supersawCount: 5, supersawSpread: 40, ampEnvAttack: 0.1, ampEnvDecay: 0.5, ampEnvSustain: 0.8, ampEnvRelease: 0.4, chorusEnable: true, chorusWet: 0.3, filterType: "ms20lp", filterCutoff: 4000, filterResonance: 2 }
+        };
+
+        function populatePresetDropdown() {
+            dom.presetSelect.innerHTML = ''; 
+            const initOption = document.createElement('option');
+            initOption.value = "Init";
+            initOption.textContent = "Init";
+            dom.presetSelect.appendChild(initOption);
+
+            for (const presetName in presets) {
+                if (presetName !== "Init") { 
+                    const option = document.createElement('option');
+                    option.value = presetName;
+                    option.textContent = presetName;
+                    dom.presetSelect.appendChild(option);
                 }
             }
-            let quantizedMidiNote = octave * 12 + closest + rootNote;
-            // If the closest note in the scale pushed it to the next octave, adjust
-            if (closest < noteInOctave && Math.abs(noteInOctave - closest) > Math.abs(noteInOctave - (closest + 12))) {
-                 // This logic might need refinement based on desired octave behavior for quantization
-            }
-            return Math.max(0, Math.min(127, quantizedMidiNote)); // Clamp to MIDI range
         }
 
-
-        dom.sequencerEnable.addEventListener('change', (e) => {
-            if (e.target.checked) {
-                if (Tone.Transport.state !== "started") {
-                    Tone.Transport.start();
-                }
-                if(sequencerLoop) sequencerLoop.start(0);
-            } else {
-                if(sequencerLoop) sequencerLoop.stop();
-                // Optionally stop Tone.Transport if nothing else uses it:
-                // if (Tone.Transport.state === "started") { Tone.Transport.stop(); }
+        function loadPreset(presetName) {
+            console.log("Loading preset:", presetName);
+            const settings = presets[presetName] || defaultSettings;
+            
+            if (dom.oscType.value !== settings.oscType) {
+                dom.oscType.value = settings.oscType;
+                updateOscillatorType(); 
             }
+
+            for (const paramKey in settings) {
+                const paramDef = paramDefinitions[paramKey];
+                if (paramDef && dom[paramDef.elementId]) {
+                    const element = dom[paramDef.elementId];
+                    const value = settings[paramKey];
+
+                    if (paramDef.type === 'range') {
+                        element.value = value;
+                        const displayEl = dom[paramDef.elementId + 'Display'];
+                        if (displayEl) { // Check if display element exists
+                            const decimals = paramDefinitions[paramKey].decimals === 0 ? 0 : (paramDefinitions[paramKey].decimals || (Number.isInteger(value) ? 0 : 2));
+                            updateSliderDisplay(element, displayEl, paramDefinitions[paramKey].unit || '', decimals);
+                        }
+                    } else if (paramDef.type === 'checkbox') {
+                        element.checked = value;
+                    } else if (paramDef.type === 'select') {
+                        element.value = value;
+                    }
+                }
+            }
+            
+            applyCurrentOscillatorSpecificSettings(dom.oscType.value);
+            applyAudioChain();
+            updateLFO1Connections();
+            if (dom.oscType.value === 'granular' && (!grainPlayerBuffer || !grainPlayerBuffer.loaded)) {
+                dom.midiLearnStatus.textContent = "Preset loaded. Load WAV for Granular Osc.";
+            } else {
+                 dom.midiLearnStatus.textContent = `${presetName} Loaded`;
+            }
+            setTimeout(() => { if (dom.midiLearnStatus.textContent === `${presetName} Loaded` || dom.midiLearnStatus.textContent === "Preset loaded. Load WAV for Granular Osc.") dom.midiLearnStatus.textContent = ""; }, 2000);
+        }
+
+        dom.presetSelect.addEventListener('change', (e) => { 
+            loadPreset(e.target.value); 
             releaseAndRefocus(e);
         });
-        dom.sequencerRate.addEventListener('input', (e) => {
-            updateSliderDisplay(dom.sequencerRate, dom.sequencerRateDisplay, 'Hz', 1);
-            if (sequencerLoop) {
-                sequencerLoop.interval = `${1 / parseFloat(e.target.value)}s`;
-            }
-            // No need to call releaseAndRefocus during dragging
-        });
-         dom.sequencerRate.addEventListener('mouseup', releaseAndRefocus);
-         dom.sequencerRate.addEventListener('touchend', releaseAndRefocus, {passive: true});
-
-        dom.sequencerGateProb.addEventListener('input', (e) => { updateSliderDisplay(dom.sequencerGateProb, dom.sequencerGateProbDisplay, '%', 0); /* No blur */ });
-        dom.sequencerGateProb.addEventListener('mouseup', releaseAndRefocus);
-        dom.sequencerGateProb.addEventListener('touchend', releaseAndRefocus, {passive:true});
-
-        dom.sequencerNoteDuration.addEventListener('input', (e) => { updateSliderDisplay(dom.sequencerNoteDuration, dom.sequencerNoteDurationDisplay, 's', 2); /* No blur */ });
-        dom.sequencerNoteDuration.addEventListener('mouseup', releaseAndRefocus);
-        dom.sequencerNoteDuration.addEventListener('touchend', releaseAndRefocus, {passive: true});
-
-        dom.sequencerPitchSpread.addEventListener('input', (e) => { updateSliderDisplay(dom.sequencerPitchSpread, dom.sequencerPitchSpreadDisplay, ' semi', 0); /* No blur */ });
-        dom.sequencerPitchSpread.addEventListener('mouseup', releaseAndRefocus);
-        dom.sequencerPitchSpread.addEventListener('touchend', releaseAndRefocus, {passive:true});
-
-        dom.sequencerScale.addEventListener('change', releaseAndRefocus);
 
 
         // --- Initial Page Load ---
@@ -832,30 +777,12 @@
             console.log("Window loaded."); 
             dom.octaveDisplay.textContent = startingOctave; 
             createOnScreenKeyboard(); 
+            populatePresetDropdown();
             
-            updateSliderDisplay(dom.volume, dom.volumeDisplay, 'dB', 0); 
-            updateSliderDisplay(dom.ampEnvAttack, dom.ampEnvAttackDisplay, 's', 3); updateSliderDisplay(dom.ampEnvDecay, dom.ampEnvDecayDisplay, 's', 2); updateSliderDisplay(dom.ampEnvSustain, dom.ampEnvSustainDisplay, '', 2); updateSliderDisplay(dom.ampEnvRelease, dom.ampEnvReleaseDisplay, 's', 2);
-            updateSliderDisplay(dom.filterCutoff, dom.filterCutoffDisplay, 'Hz', 0); updateSliderDisplay(dom.filterResonance, dom.filterResonanceDisplay, 'Q');
-            updateSliderDisplay(dom.filterEnvAttack, dom.filterEnvAttackDisplay, 's', 3); updateSliderDisplay(dom.filterEnvDecay, dom.filterEnvDecayDisplay, 's', 2); updateSliderDisplay(dom.filterEnvSustain, dom.filterEnvSustainDisplay, '', 2); updateSliderDisplay(dom.filterEnvRelease, dom.filterEnvReleaseDisplay, 's', 2); updateSliderDisplay(dom.filterEnvAmount, dom.filterEnvAmountDisplay, ' oct', 1);
-            updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); updateSliderDisplay(dom.fmModIndex, dom.fmModIndexDisplay, '', 0);
-            updateSliderDisplay(dom.supersawCount, dom.supersawCountDisplay, '', 0); updateSliderDisplay(dom.supersawSpread, dom.supersawSpreadDisplay, ' cents', 0);
-            updateSliderDisplay(dom.resonantBodyHarmonicity, dom.resonantBodyHarmonicityDisplay, '',1); updateSliderDisplay(dom.resonantBodyModIndex, dom.resonantBodyModIndexDisplay, '', 0);
-            updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '',1); updateSliderDisplay(dom.formantVoiceModIndex, dom.formantVoiceModIndexDisplay, '', 0);
-            updateSliderDisplay(dom.granularGrainSize, dom.granularGrainSizeDisplay, 's', 3); updateSliderDisplay(dom.granularOverlap, dom.granularOverlapDisplay, 's', 3); updateSliderDisplay(dom.granularDetune, dom.granularDetuneDisplay, 'cents', 0); updateSliderDisplay(dom.granularPlaybackRate, dom.granularPlaybackRateDisplay, 'x',2);
-            updateSliderDisplay(dom.granularLoopStart, dom.granularLoopStartDisplay, '', 2); updateSliderDisplay(dom.granularLoopEnd, dom.granularLoopEndDisplay, '', 2);
-            updateSliderDisplay(dom.lfo1Rate, dom.lfo1RateDisplay, 'Hz'); updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2);
-            updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz');
-            updateSliderDisplay(dom.distAmount, dom.distAmountDisplay, '', 2); updateSliderDisplay(dom.distWet, dom.distWetDisplay, '', 2);
-            updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, 'bits', 0); updateSliderDisplay(dom.crusherWet, dom.crusherWetDisplay, '', 2);
-            updateSliderDisplay(dom.ringModFrequency, dom.ringModFrequencyDisplay, 'Hz', 0); updateSliderDisplay(dom.ringModWet, dom.ringModWetDisplay, '', 2);
-            updateSliderDisplay(dom.chorusRate, dom.chorusRateDisplay, 'Hz'); updateSliderDisplay(dom.chorusDepth, dom.chorusDepthDisplay, '', 2); updateSliderDisplay(dom.chorusFeedback, dom.chorusFeedbackDisplay, '', 2); updateSliderDisplay(dom.chorusWet, dom.chorusWetDisplay, '', 2);
-            updateSliderDisplay(dom.phaserFrequency, dom.phaserFrequencyDisplay, 'Hz'); updateSliderDisplay(dom.phaserOctaves, dom.phaserOctavesDisplay, '', 1); updateSliderDisplay(dom.phaserBaseFreq, dom.phaserBaseFreqDisplay, 'Hz', 0); updateSliderDisplay(dom.phaserWet, dom.phaserWetDisplay, '', 2);
-            updateSliderDisplay(dom.delayTime, dom.delayTimeDisplay, 's', 2); updateSliderDisplay(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2); updateSliderDisplay(dom.delayWet, dom.delayWetDisplay, '', 2);
-            updateSliderDisplay(dom.pingpongDelayTime, dom.pingpongDelayTimeDisplay, 's', 2); updateSliderDisplay(dom.pingpongFeedback, dom.pingpongFeedbackDisplay, '', 2); updateSliderDisplay(dom.pingpongWet, dom.pingpongWetDisplay, '', 2);
-            updateSliderDisplay(dom.reverbDecay, dom.reverbDecayDisplay, 's'); updateSliderDisplay(dom.reverbWet, dom.reverbWetDisplay, '', 2);
-            updateSliderDisplay(dom.sequencerRate, dom.sequencerRateDisplay, 'Hz', 1); updateSliderDisplay(dom.sequencerGateProb, dom.sequencerGateProbDisplay, '%', 0); updateSliderDisplay(dom.sequencerNoteDuration, dom.sequencerNoteDurationDisplay, 's', 2); updateSliderDisplay(dom.sequencerPitchSpread, dom.sequencerPitchSpreadDisplay, ' semi', 0);
+            // Load the "Init" preset by default
+            loadPreset("Init"); 
             
-            // Initial visibility of contextual controls
+            // Initial visibility of contextual controls based on the "Init" preset
             dom.pwmControls.classList.toggle('hidden', dom.oscType.value !== 'pwm'); 
             dom.fmControls.classList.toggle('hidden', dom.oscType.value !== 'fmsine');
             dom.supersawControls.classList.toggle('hidden', dom.oscType.value !== 'supersaw');
