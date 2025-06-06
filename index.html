@@ -119,12 +119,14 @@
                 <label for="osc-type">Type</label>
                 <select id="osc-type">
                     <option value="sine">Sine</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="sawtooth">Sawtooth</option>
-                    <option value="pwm">PWM</option><option value="fmsine">FM Sine</option><option value="amsine">AM Sine</option>
-                    <option value="supersaw">Supersaw</option>
-                    <option value="resonantbody">Resonant Body</option>
-                    <option value="formantvoice">Formant Voice</option>
+                    <option value="pulse">Pulse</option><option value="pwm">PWM</option><option value="fmsine">FM Sine</option><option value="amsine">AM Sine</option>
+                    <option value="supersaw">Supersaw</option><option value="noise">Noise</option>
+                    <option value="resonantbody">Resonant Body</option><option value="formantvoice">Formant Voice</option>
                     <option value="granular">Granular (Monophonic)</option> 
                 </select>
+                <div id="pulse-controls" class="hidden">
+                    <label for="pulse-width">Pulse Width</label><input type="range" id="pulse-width" min="0.01" max="0.99" value="0.5" step="0.01"><span id="pulse-width-display" class="value-display">0.50</span>
+                </div>
                 <div id="pwm-controls" class="hidden">
                     <label for="pwm-speed">PWM Speed</label><input type="range" id="pwm-speed" min="0.1" max="20" value="5" step="0.1"><span id="pwm-speed-display" class="value-display">5 Hz</span>
                 </div>
@@ -135,6 +137,10 @@
                 <div id="supersaw-controls" class="hidden">
                     <label for="supersaw-count">Saw Count</label><input type="range" id="supersaw-count" min="2" max="10" value="3" step="1"><span id="supersaw-count-display" class="value-display">3</span>
                     <label for="supersaw-spread">Spread (cents)</label><input type="range" id="supersaw-spread" min="0" max="100" value="25" step="1"><span id="supersaw-spread-display" class="value-display">25 cents</span>
+                </div>
+                <div id="noise-controls" class="hidden">
+                     <label for="noise-type">Noise Type</label>
+                     <select id="noise-type"><option value="white">White</option><option value="pink">Pink</option><option value="brown">Brown</option></select>
                 </div>
                  <div id="resonantbody-controls" class="hidden">
                     <label for="resonantbody-harmonicity">FM Harm (Resonant)</label><input type="range" id="resonantbody-harmonicity" min="0.1" max="20" value="2.7" step="0.1"><span id="resonantbody-harmonicity-display" class="value-display">2.7</span>
@@ -209,6 +215,8 @@
             </div>
             <!-- LFO 1 GROUP -->
             <div class="control-group"> <span class="group-title">LFO 1</span> <label for="lfo1-enable" style="margin-bottom: 2px;">Enable</label><input type="checkbox" id="lfo1-enable"> <label for="lfo1-wave">Waveform</label> <select id="lfo1-wave"> <option value="sine">Sine</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="sawtooth">Sawtooth</option> <option value="pulse">Pulse</option><option value="pwm">PWM</option> </select> <div id="lfo1-pulse-width-controls" class="hidden"> <label for="lfo1-pulse-width">Pulse Width</label><input type="range" id="lfo1-pulse-width" min="0.01" max="0.99" value="0.5" step="0.01"><span id="lfo1-pulse-width-display" class="value-display">0.5</span> </div> <div id="lfo1-pwm-freq-controls" class="hidden"> <label for="lfo1-pwm-freq">PWM Freq</label><input type="range" id="lfo1-pwm-freq" min="0.1" max="20" value="2" step="0.1"><span id="lfo1-pwm-freq-display" class="value-display">2 Hz</span> </div> <label for="lfo1-rate">Rate</label><input type="range" id="lfo1-rate" min="0.1" max="30" value="2" step="0.1"><span id="lfo1-rate-display" class="value-display">2 Hz</span> <label for="lfo1-depth">Depth</label><input type="range" id="lfo1-depth" min="0" max="1" value="0.5" step="0.01"><span id="lfo1-depth-display" class="value-display">0.5</span> <label for="lfo1-destination">Destination</label> <select id="lfo1-destination"> <option value="none">None</option><option value="pitch">Osc Pitch (Vibrato)</option><option value="filterCutoff">Filter Env BaseFreq</option><option value="amplitude">Amplitude (Tremolo)</option> </select> </div>
+             <!-- LFO 2 GROUP -->
+             <div class="control-group"> <span class="group-title">LFO 2</span> <label for="lfo2-enable" style="margin-bottom: 2px;">Enable</label><input type="checkbox" id="lfo2-enable"> <label for="lfo2-wave">Waveform</label> <select id="lfo2-wave"> <option value="sine">Sine</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="sawtooth">Sawtooth</option> <option value="pulse">Pulse</option><option value="pwm">PWM</option> </select> <div id="lfo2-pulse-width-controls" class="hidden"> <label for="lfo2-pulse-width">Pulse Width</label><input type="range" id="lfo2-pulse-width" min="0.01" max="0.99" value="0.5" step="0.01"><span id="lfo2-pulse-width-display" class="value-display">0.5</span> </div> <div id="lfo2-pwm-freq-controls" class="hidden"> <label for="lfo2-pwm-freq">PWM Freq</label><input type="range" id="lfo2-pwm-freq" min="0.1" max="20" value="2" step="0.1"><span id="lfo2-pwm-freq-display" class="value-display">2 Hz</span> </div> <label for="lfo2-rate">Rate</label><input type="range" id="lfo2-rate" min="0.1" max="30" value="5" step="0.1"><span id="lfo2-rate-display" class="value-display">5 Hz</span> <label for="lfo2-depth">Depth</label><input type="range" id="lfo2-depth" min="0" max="1" value="0.5" step="0.01"><span id="lfo2-depth-display" class="value-display">0.5</span> <label for="lfo2-destination">Destination</label> <select id="lfo2-destination"> <option value="none">None</option><option value="pitch">Osc Pitch (Vibrato)</option><option value="filterCutoff">Filter Env BaseFreq</option><option value="pulseWidth">Pulse Width</option><option value="amplitude">Amplitude (Tremolo)</option> </select> </div>
             <!-- EFFECTS -->
             <div class="control-group"><span class="group-title">Distortion</span><label for="dist-enable">Enable</label><input type="checkbox" id="dist-enable"><label for="dist-amount">Amount</label><input type="range" id="dist-amount" min="0" max="1" value="0.0" step="0.01"><span id="dist-amount-display" class="value-display">0.0</span><label for="dist-wet">Wet</label><input type="range" id="dist-wet" min="0" max="1" value="0.0" step="0.01"><span id="dist-wet-display" class="value-display">0.0</span></div>
             <div class="control-group"><span class="group-title">BitCrusher</span><label for="crusher-enable">Enable</label><input type="checkbox" id="crusher-enable"><label for="crusher-bits">Bits</label><input type="range" id="crusher-bits" min="1" max="16" value="8" step="1"><span id="crusher-bits-display" class="value-display">8 bits</span><label for="crusher-wet">Wet</label><input type="range" id="crusher-wet" min="0" max="1" value="0.0" step="0.01"><span id="crusher-wet-display" class="value-display">0.0</span></div>
@@ -232,7 +240,7 @@
         // --- Global Variables & Tone.js Objects ---
         let synth; 
         let startingOctave = 3; 
-        let lfo1, lfo1ToDetuneGain, lfo1ToFilterFreqGain;
+        let lfo1, lfo1ToDetuneGain, lfo1ToFilterFreqGain, lfo2, lfo2ToPulseWidthGain; // Added lfo2 objects
         let tremoloEffect, distortionEffect, bitCrusherEffect, ringModulatorEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect;
         let currentActiveSynthType = 'MonoSynth'; 
         let grainPlayerBuffer = null;
@@ -245,8 +253,12 @@
 
         // --- DOM Element Grabbing (Centralized) ---
         const dom = { 
-            oscType: document.getElementById('osc-type'), pwmControls: document.getElementById('pwm-controls'), pwmSpeed: document.getElementById('pwm-speed'), pwmSpeedDisplay: document.getElementById('pwm-speed-display'), fmControls: document.getElementById('fm-controls'), fmHarmonicity: document.getElementById('fm-harmonicity'), fmHarmonicityDisplay: document.getElementById('fm-harmonicity-display'), fmModIndex: document.getElementById('fm-mod-index'), fmModIndexDisplay: document.getElementById('fm-mod-index-display'), 
+            oscType: document.getElementById('osc-type'), 
+            pulseControls: document.getElementById('pulse-controls'), pulseWidth: document.getElementById('pulse-width'), pulseWidthDisplay: document.getElementById('pulse-width-display'),
+            pwmControls: document.getElementById('pwm-controls'), pwmSpeed: document.getElementById('pwm-speed'), pwmSpeedDisplay: document.getElementById('pwm-speed-display'), 
+            fmControls: document.getElementById('fm-controls'), fmHarmonicity: document.getElementById('fm-harmonicity'), fmHarmonicityDisplay: document.getElementById('fm-harmonicity-display'), fmModIndex: document.getElementById('fm-mod-index'), fmModIndexDisplay: document.getElementById('fm-mod-index-display'), 
             supersawControls: document.getElementById('supersaw-controls'), supersawCount: document.getElementById('supersaw-count'), supersawCountDisplay: document.getElementById('supersaw-count-display'), supersawSpread: document.getElementById('supersaw-spread'), supersawSpreadDisplay: document.getElementById('supersaw-spread-display'),
+            noiseControls: document.getElementById('noise-controls'), noiseType: document.getElementById('noise-type'),
             resonantBodyControls: document.getElementById('resonantbody-controls'), resonantBodyHarmonicity: document.getElementById('resonantbody-harmonicity'), resonantBodyHarmonicityDisplay: document.getElementById('resonantbody-harmonicity-display'), resonantBodyModIndex: document.getElementById('resonantbody-mod-index'), resonantBodyModIndexDisplay: document.getElementById('resonantbody-mod-index-display'),
             formantVoiceControls: document.getElementById('formantvoice-controls'), formantVoiceHarmonicity: document.getElementById('formantvoice-harmonicity'), formantVoiceHarmonicityDisplay: document.getElementById('formantvoice-harmonicity-display'), formantVoiceModIndex: document.getElementById('formantvoice-mod-index'), formantVoiceModIndexDisplay: document.getElementById('formantvoice-mod-index-display'),
             granularControls: document.getElementById('granular-controls'), granularFileInput: document.getElementById('granular-file-input'), granularLoop: document.getElementById('granular-loop'), granularGrainSize: document.getElementById('granular-grain-size'), granularGrainSizeDisplay: document.getElementById('granular-grain-size-display'), granularOverlap: document.getElementById('granular-overlap'), granularOverlapDisplay: document.getElementById('granular-overlap-display'), granularDetune: document.getElementById('granular-detune'), granularDetuneDisplay: document.getElementById('granular-detune-display'), granularPlaybackRate: document.getElementById('granular-playback-rate'), granularPlaybackRateDisplay: document.getElementById('granular-playback-rate-display'),
@@ -263,6 +275,9 @@
             lfo1Enable: document.getElementById('lfo1-enable'), lfo1Wave: document.getElementById('lfo1-wave'), lfo1Rate: document.getElementById('lfo1-rate'), lfo1RateDisplay: document.getElementById('lfo1-rate-display'), lfo1Depth: document.getElementById('lfo1-depth'), lfo1DepthDisplay: document.getElementById('lfo1-depth-display'), lfo1Destination: document.getElementById('lfo1-destination'),
             lfo1PulseWidthControls: document.getElementById('lfo1-pulse-width-controls'), lfo1PulseWidth: document.getElementById('lfo1-pulse-width'), lfo1PulseWidthDisplay: document.getElementById('lfo1-pulse-width-display'),
             lfo1PwmFreqControls: document.getElementById('lfo1-pwm-freq-controls'), lfo1PwmFreq: document.getElementById('lfo1-pwm-freq'), lfo1PwmFreqDisplay: document.getElementById('lfo1-pwm-freq-display'),
+            lfo2Enable: document.getElementById('lfo2-enable'), lfo2Wave: document.getElementById('lfo2-wave'), lfo2Rate: document.getElementById('lfo2-rate'), lfo2RateDisplay: document.getElementById('lfo2-rate-display'), lfo2Depth: document.getElementById('lfo2-depth'), lfo2DepthDisplay: document.getElementById('lfo2-depth-display'), lfo2Destination: document.getElementById('lfo2-destination'),
+            lfo2PulseWidthControls: document.getElementById('lfo2-pulse-width-controls'), lfo2PulseWidth: document.getElementById('lfo2-pulse-width'), lfo2PulseWidthDisplay: document.getElementById('lfo2-pulse-width-display'),
+            lfo2PwmFreqControls: document.getElementById('lfo2-pwm-freq-controls'), lfo2PwmFreq: document.getElementById('lfo2-pwm-freq'), lfo2PwmFreqDisplay: document.getElementById('lfo2-pwm-freq-display'),
             distEnable: document.getElementById('dist-enable'), distAmount: document.getElementById('dist-amount'), distAmountDisplay: document.getElementById('dist-amount-display'), distWet: document.getElementById('dist-wet'), distWetDisplay: document.getElementById('dist-wet-display'), 
             crusherEnable: document.getElementById('crusher-enable'), crusherBits: document.getElementById('crusher-bits'), crusherBitsDisplay: document.getElementById('crusher-bits-display'), crusherWet: document.getElementById('crusher-wet'), crusherWetDisplay: document.getElementById('crusher-wet-display'),
             ringModEnable: document.getElementById('ringmod-enable'), ringModFrequency: document.getElementById('ringmod-frequency'), ringModFrequencyDisplay: document.getElementById('ringmod-frequency-display'), ringModWet: document.getElementById('ringmod-wet'), ringModWetDisplay: document.getElementById('ringmod-wet-display'),
@@ -283,11 +298,13 @@
 
         const paramDefinitions = { /* ... (Updated with granular, ringmod, and sequencer params) ... */
             'oscType': { elementId: 'osc-type', label: 'Osc Type', type: 'select', options: Array.from(dom.oscType.options).map(opt => opt.value), eventToDispatch: 'change' },
+            'pulseWidth': { elementId: 'pulse-width', label: 'Pulse Width', type: 'range', min:0.01, max:0.99, eventToDispatch: 'input'},
             'pwmSpeed': { elementId: 'pwm-speed', label: 'PWM Speed', type: 'range', min: 0.1, max: 20, eventToDispatch: 'input'},
             'fmHarmonicity': { elementId: 'fm-harmonicity', label: 'FM Harm', type: 'range', min: 0.1, max: 10, eventToDispatch: 'input'},
             'fmModIndex': { elementId: 'fm-mod-index', label: 'FM Index', type: 'range', min: 1, max: 50, eventToDispatch: 'input'},
             'supersawCount': { elementId: 'supersaw-count', label: 'Saw Count', type: 'range', min: 2, max: 10, eventToDispatch: 'input'},
             'supersawSpread': { elementId: 'supersaw-spread', label: 'Saw Spread', type: 'range', min: 0, max: 100, eventToDispatch: 'input'},
+            'noiseType': { elementId: 'noise-type', label: 'Noise Type', type: 'select', options: Array.from(dom.noiseType.options).map(opt => opt.value), eventToDispatch: 'change' },
             'resonantBodyHarmonicity': { elementId: 'resonantbody-harmonicity', label: 'Reso Harm', type: 'range', min: 0.1, max: 20, eventToDispatch: 'input'},
             'resonantBodyModIndex': { elementId: 'resonantbody-mod-index', label: 'Reso Index', type: 'range', min: 1, max: 100, eventToDispatch: 'input'},
             'formantVoiceHarmonicity': { elementId: 'formantvoice-harmonicity', label: 'Formant Harm', type: 'range', min: 0.1, max: 5, eventToDispatch: 'input'},
@@ -326,6 +343,13 @@
             'lfo1Rate': { elementId: 'lfo1-rate', label: 'LFO1 Rate', type: 'range', min: 0.1, max: 30, eventToDispatch: 'input' },
             'lfo1Depth': { elementId: 'lfo1-depth', label: 'LFO1 Depth', type: 'range', min: 0, max: 1, eventToDispatch: 'input' },
             'lfo1Destination': { elementId: 'lfo1-destination', label: 'LFO1 Dest', type: 'select', options: Array.from(dom.lfo1Destination.options).map(opt => opt.value), eventToDispatch: 'change' },
+            'lfo2Enable': { elementId: 'lfo2-enable', label: 'LFO2 Enable', type: 'checkbox', eventToDispatch: 'change' },
+            'lfo2Wave': { elementId: 'lfo2-wave', label: 'LFO2 Wave', type: 'select', options: Array.from(dom.lfo2Wave.options).map(opt => opt.value), eventToDispatch: 'change' },
+            'lfo2PulseWidth': { elementId: 'lfo2-pulse-width', label: 'LFO2 Pulse Width', type: 'range', min:0.01, max:0.99, eventToDispatch: 'input'},
+            'lfo2PwmFreq': { elementId: 'lfo2-pwm-freq', label: 'LFO2 PWM Freq', type: 'range', min:0.1, max:20, eventToDispatch: 'input'},
+            'lfo2Rate': { elementId: 'lfo2-rate', label: 'LFO2 Rate', type: 'range', min: 0.1, max: 30, eventToDispatch: 'input' },
+            'lfo2Depth': { elementId: 'lfo2-depth', label: 'LFO2 Depth', type: 'range', min: 0, max: 1, eventToDispatch: 'input' },
+            'lfo2Destination': { elementId: 'lfo2-destination', label: 'LFO2 Dest', type: 'select', options: Array.from(dom.lfo2Destination.options).map(opt => opt.value), eventToDispatch: 'change' },
             'distEnable': { elementId: 'dist-enable', label: 'Distortion Enable', type: 'checkbox', eventToDispatch: 'change'}, 'distAmount': { elementId: 'dist-amount', label: 'Distortion Amt', type: 'range', min:0, max:1, eventToDispatch: 'input'}, 'distWet': { elementId: 'dist-wet', label: 'Distortion Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
             'crusherEnable': { elementId: 'crusher-enable', label: 'BitCrush Enable', type: 'checkbox', eventToDispatch: 'change'}, 'crusherBits': { elementId: 'crusher-bits', label: 'BitCrush Bits', type: 'range', min:1, max:16, eventToDispatch: 'input'}, 'crusherWet': { elementId: 'crusher-wet', label: 'BitCrush Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
             'ringModEnable': { elementId: 'ringmod-enable', label: 'RingMod Enable', type: 'checkbox', eventToDispatch: 'change'}, 'ringModFrequency': { elementId: 'ringmod-frequency', label: 'RingMod Freq', type: 'range', min:1, max:2000, eventToDispatch: 'input'}, 'ringModWet': { elementId: 'ringmod-wet', label: 'RingMod Wet', type: 'range', min:0, max:1, eventToDispatch: 'input'},
@@ -382,6 +406,10 @@
                     lfo1ToFilterFreqGain = new Tone.Multiply(0);
                     lfo1 = new Tone.LFO({ frequency: parseFloat(dom.lfo1Rate.value), type: dom.lfo1Wave.value, min: -1, max: 1 });
                     
+                    lfo2ToPulseWidthGain = new Tone.Multiply(0); 
+                    lfo2 = new Tone.LFO({ frequency: parseFloat(dom.lfo2Rate.value), type: dom.lfo2Wave.value, min: -1, max: 1 });
+
+
                     tremoloEffect = new Tone.Tremolo({ frequency: parseFloat(dom.lfo1Rate.value), type: dom.lfo1Wave.value, depth: 0, spread: 0 });
                     distortionEffect = new Tone.Distortion(parseFloat(dom.distAmount.value));
                     bitCrusherEffect = new Tone.BitCrusher(parseInt(dom.crusherBits.value));
@@ -428,20 +456,26 @@
         function updateOscillatorType() {
             if (!Tone.context || Tone.context.state !== 'running') { console.warn("UPDATE_OSC_TYPE_WARN: AudioContext not running."); return; }
             const newSelectedOscType = dom.oscType.value;
-            let newActiveSynthType = (newSelectedOscType === 'granular') ? 'GrainPlayer' : 'MonoSynth';
+            let newActiveSynthType = (newSelectedOscType === 'granular' || newSelectedOscType === 'noise') ? 'OneShot' : 'PolySynth'; // Noise and Granular are not polyphonic
+            if(newSelectedOscType === 'granular') newActiveSynthType = 'GrainPlayer';
+
+
             console.log("UPDATE_OSC_TYPE: Selected type:", newSelectedOscType, "Required synth type:", newActiveSynthType);
 
-            dom.pwmControls.classList.add('hidden'); dom.fmControls.classList.add('hidden');
+            dom.pulseControls.classList.add('hidden'); dom.pwmControls.classList.add('hidden'); dom.fmControls.classList.add('hidden');
             dom.supersawControls.classList.add('hidden'); 
+            dom.noiseControls.classList.add('hidden');
             dom.resonantBodyControls.classList.add('hidden'); 
             dom.formantVoiceControls.classList.add('hidden');
             dom.granularControls.classList.add('hidden');
 
 
             switch (newSelectedOscType) {
+                case 'pulse': dom.pulseControls.classList.remove('hidden'); break;
                 case 'pwm': dom.pwmControls.classList.remove('hidden'); break;
                 case 'fmsine': dom.fmControls.classList.remove('hidden'); break;
                 case 'supersaw': dom.supersawControls.classList.remove('hidden'); break; 
+                case 'noise': dom.noiseControls.classList.remove('hidden'); break;
                 case 'resonantbody': dom.resonantBodyControls.classList.remove('hidden'); break;
                 case 'formantvoice': dom.formantVoiceControls.classList.remove('hidden'); break;
                 case 'granular': dom.granularControls.classList.remove('hidden'); break;
@@ -460,6 +494,7 @@
                 }
                 if(lfo1ToDetuneGain && !lfo1ToDetuneGain.disposed) { lfo1ToDetuneGain.dispose(); lfo1ToDetuneGain = new Tone.Multiply(0); }
                 if(lfo1ToFilterFreqGain && !lfo1ToFilterFreqGain.disposed) { lfo1ToFilterFreqGain.dispose(); lfo1ToFilterFreqGain = new Tone.Multiply(0); }
+                if(lfo2ToPulseWidthGain && !lfo2ToPulseWidthGain.disposed) { lfo2ToPulseWidthGain.dispose(); lfo2ToPulseWidthGain = new Tone.Multiply(0); }
 
 
                 if (newActiveSynthType === 'GrainPlayer') {
@@ -487,6 +522,7 @@
                  applyCurrentOscillatorSpecificSettings(newSelectedOscType);
                  applyAudioChain(); 
                  updateLFO1Connections();
+                 updateLFO2Connections();
             } else if (newActiveSynthType === 'GrainPlayer' && !grainPlayerBuffer) {
                 applyAudioChain(); 
             }
@@ -497,7 +533,7 @@
             if (!synth || synth.disposed) { console.warn("APPLY_OSC_SETTINGS_WARN: Synth not ready or disposed for type:", selectedOscType); return; }
             console.log("APPLY_OSC_SETTINGS: Applying for type:", selectedOscType, "to current synth type:", currentActiveSynthType);
 
-            if (synth instanceof Tone.PolySynth && selectedOscType !== 'granular') { 
+            if (synth instanceof Tone.PolySynth && selectedOscType !== 'granular' && selectedOscType !== 'noise') { 
                 let settingsForSynthSet = {
                     volume: parseFloat(dom.volume.value), 
                     envelope: { 
@@ -528,10 +564,12 @@
                 let monoSynthOscSettings = {};
                 switch (selectedOscType) { 
                     case 'sine': case 'square': case 'triangle': case 'sawtooth': monoSynthOscSettings = { type: selectedOscType }; break; 
+                    case 'pulse': monoSynthOscSettings = { type: 'pulse', width: parseFloat(dom.pulseWidth.value) }; break;
                     case 'pwm': monoSynthOscSettings = { type: 'pwm', modulationFrequency: parseFloat(dom.pwmSpeed.value) }; break; 
                     case 'fmsine': monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.fmHarmonicity.value), modulationIndex: parseFloat(dom.fmModIndex.value), modulationType: 'sine' }; break; 
                     case 'amsine': monoSynthOscSettings = { type: 'amsine', harmonicity: 1, modulationType: 'square' }; break; 
                     case 'supersaw': monoSynthOscSettings = { type: 'fatsawtooth', count: parseInt(dom.supersawCount.value), spread: parseFloat(dom.supersawSpread.value) }; break; 
+                    case 'noise': monoSynthOscSettings = { type: dom.noiseType.value }; break;
                     case 'resonantbody': monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.resonantBodyHarmonicity.value), modulationIndex: parseFloat(dom.resonantBodyModIndex.value), modulationType: 'sine' }; break; 
                     case 'formantvoice': monoSynthOscSettings = { type: 'fmsine', harmonicity: parseFloat(dom.formantVoiceHarmonicity.value), modulationIndex: parseFloat(dom.formantVoiceModIndex.value), modulationType: 'triangle' }; break; 
                     default: monoSynthOscSettings = { type: 'sine' }; 
@@ -605,11 +643,13 @@
 
         dom.oscType.addEventListener('change', (e) => { updateOscillatorType(); releaseAndRefocus(e); });
         const oscParamHandler = () => { applyCurrentOscillatorSpecificSettings(dom.oscType.value); }; 
+        dom.pulseWidth.addEventListener('input', (e) => { updateSliderDisplay(dom.pulseWidth, dom.pulseWidthDisplay, '', 2); oscParamHandler(); });
         dom.pwmSpeed.addEventListener('input', (e) => { updateSliderDisplay(dom.pwmSpeed, dom.pwmSpeedDisplay, 'Hz'); oscParamHandler(); });
         dom.fmHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.fmHarmonicity, dom.fmHarmonicityDisplay, '', 1); oscParamHandler();});
         dom.fmModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.fmModIndex, dom.fmModIndexDisplay, '', 0); oscParamHandler();});
         dom.supersawCount.addEventListener('input', (e) => { updateSliderDisplay(dom.supersawCount, dom.supersawCountDisplay, '', 0); oscParamHandler();});
         dom.supersawSpread.addEventListener('input', (e) => { updateSliderDisplay(dom.supersawSpread, dom.supersawSpreadDisplay, ' cents', 0); oscParamHandler();});
+        dom.noiseType.addEventListener('change', (e) => {oscParamHandler(); releaseAndRefocus(e)});
         dom.resonantBodyHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.resonantBodyHarmonicity, dom.resonantBodyHarmonicityDisplay, '', 1); oscParamHandler(); });
         dom.resonantBodyModIndex.addEventListener('input', (e) => { updateSliderDisplay(dom.resonantBodyModIndex, dom.resonantBodyModIndexDisplay, '', 0); oscParamHandler(); });
         dom.formantVoiceHarmonicity.addEventListener('input', (e) => { updateSliderDisplay(dom.formantVoiceHarmonicity, dom.formantVoiceHarmonicityDisplay, '', 1); oscParamHandler(); });
@@ -648,14 +688,23 @@
         dom.filterEnvRelease.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvRelease, dom.filterEnvReleaseDisplay, 's', 2); filterParamHandler(); });
         dom.filterEnvAmount.addEventListener('input', (e) => { updateSliderDisplay(dom.filterEnvAmount, dom.filterEnvAmountDisplay, ' oct', 1); filterParamHandler(); });
 
-        const lfoUpdateHandler = () => { updateLFO1Connections(); };
+        const lfoUpdateHandler = () => { updateLFO1Connections(); updateLFO2Connections(); };
         dom.lfo1Enable.addEventListener('change', (e) => {lfoUpdateHandler(); releaseAndRefocus(e);}); 
         dom.lfo1Wave.addEventListener('change', (e) => {lfoUpdateHandler(); releaseAndRefocus(e);}); 
-        dom.lfo1PulseWidth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); if (lfo1 && dom.lfo1Wave.value === 'pulse') lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); /* No blur from input for dragging */});
-        dom.lfo1PwmFreq.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz'); if (lfo1 && dom.lfo1Wave.value === 'pwm') lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); /* No blur from input for dragging */});
+        dom.lfo1PulseWidth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PulseWidth, dom.lfo1PulseWidthDisplay, '', 2); if (lfo1 && dom.lfo1Wave.value === 'pulse') lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); });
+        dom.lfo1PwmFreq.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1PwmFreq, dom.lfo1PwmFreqDisplay, 'Hz'); if (lfo1 && dom.lfo1Wave.value === 'pwm') lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); });
         dom.lfo1Rate.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Rate, dom.lfo1RateDisplay, 'Hz'); lfoUpdateHandler(); });
         dom.lfo1Depth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo1Depth, dom.lfo1DepthDisplay, '', 2); lfoUpdateHandler(); });
         dom.lfo1Destination.addEventListener('change', (e) => {lfoUpdateHandler(); releaseAndRefocus(e);});
+
+        dom.lfo2Enable.addEventListener('change', (e) => {lfoUpdateHandler(); releaseAndRefocus(e);}); 
+        dom.lfo2Wave.addEventListener('change', (e) => {lfoUpdateHandler(); releaseAndRefocus(e);}); 
+        dom.lfo2PulseWidth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo2PulseWidth, dom.lfo2PulseWidthDisplay, '', 2); if (lfo2 && dom.lfo2Wave.value === 'pulse') lfo2.width.value = parseFloat(dom.lfo2PulseWidth.value);});
+        dom.lfo2PwmFreq.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo2PwmFreq, dom.lfo2PwmFreqDisplay, 'Hz'); if (lfo2 && dom.lfo2Wave.value === 'pwm') lfo2.modulationFrequency.value = parseFloat(dom.lfo2PwmFreq.value);});
+        dom.lfo2Rate.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo2Rate, dom.lfo2RateDisplay, 'Hz'); lfoUpdateHandler(); });
+        dom.lfo2Depth.addEventListener('input', (e) => { updateSliderDisplay(dom.lfo2Depth, dom.lfo2DepthDisplay, '', 2); lfoUpdateHandler(); });
+        dom.lfo2Destination.addEventListener('change', (e) => {lfoUpdateHandler(); releaseAndRefocus(e);});
+
 
         // Effect Control Listeners
         const effectToggleHandler = (e) => { applyAudioChain(); releaseAndRefocus(e); };
@@ -685,11 +734,12 @@
 
         // Preset System
         const defaultSettings = { /* ... (all paramDefinitions keys with their default values) ... */
-            oscType: "sine", pwmSpeed: 5, fmHarmonicity: 1.5, fmModIndex: 10, supersawCount: 3, supersawSpread: 25, resonantBodyHarmonicity: 2.7, resonantBodyModIndex: 20, formantVoiceHarmonicity: 1.2, formantVoiceModIndex: 5,
+            oscType: "sine", pulseWidth: 0.5, pwmSpeed: 5, fmHarmonicity: 1.5, fmModIndex: 10, supersawCount: 3, supersawSpread: 25, noiseType: "white", resonantBodyHarmonicity: 2.7, resonantBodyModIndex: 20, formantVoiceHarmonicity: 1.2, formantVoiceModIndex: 5,
             granularLoop: false, granularLoopStart: 0, granularLoopEnd: 1, granularReverse: false, granularGrainSize: 0.1, granularOverlap: 0.05, granularDetune: 0, granularPlaybackRate: 1,
             masterVolume: 0, ampEnvAttack: 0.01, ampEnvDecay: 0.1, ampEnvSustain: 0.4, ampEnvRelease: 0.8,
             filterType: "none", filterCutoff: 15000, filterResonance: 1, filterEnvAttack: 0.05, filterEnvDecay: 0.2, filterEnvSustain: 0.5, filterEnvRelease: 1, filterEnvAmount: 3,
             lfo1Enable: false, lfo1Wave: "sine", lfo1PulseWidth: 0.5, lfo1PwmFreq: 2, lfo1Rate: 2, lfo1Depth: 0.5, lfo1Destination: "none",
+            lfo2Enable: false, lfo2Wave: "sine", lfo2PulseWidth: 0.5, lfo2PwmFreq: 2, lfo2Rate: 5, lfo2Depth: 0.5, lfo2Destination: "none",
             distEnable: false, distAmount: 0, distWet: 0,
             crusherEnable: false, crusherBits: 8, crusherWet: 0,
             ringModEnable: false, ringModFrequency: 100, ringModWet: 0,
@@ -700,9 +750,7 @@
             reverbEnable: false, reverbDecay: 1.5, reverbWet: 0,
             sequencerEnable: false, sequencerRate: 2, sequencerGateProb: 50, sequencerNoteDuration: 0.1, sequencerPitchSpread: 7, sequencerScale: "chromatic"
         };
-
         const presets = {
-            "Init": { ...defaultSettings },
             "Classic Saw Lead": { ...defaultSettings, oscType: "sawtooth", ampEnvAttack: 0.01, ampEnvDecay: 0.3, ampEnvSustain: 0.7, ampEnvRelease: 0.5, filterType: "moog", filterCutoff: 3500, filterResonance: 2, filterEnvAmount: 2.5 },
             "PWM Pad": { ...defaultSettings, oscType: "pwm", pwmSpeed: 0.5, ampEnvAttack: 0.8, ampEnvDecay: 1.5, ampEnvSustain: 0.6, ampEnvRelease: 2, chorusEnable: true, chorusWet: 0.4, reverbEnable: true, reverbDecay: 3, reverbWet: 0.3 },
             "FM Bell": { ...defaultSettings, oscType: "fmsine", fmHarmonicity: 3.5, fmModIndex: 15, ampEnvAttack: 0.005, ampEnvDecay: 1.0, ampEnvSustain: 0, ampEnvRelease: 1.2, reverbEnable: true, reverbDecay: 2, reverbWet: 0.25 },
@@ -783,6 +831,7 @@
             applyCurrentOscillatorSpecificSettings(dom.oscType.value);
             applyAudioChain();
             updateLFO1Connections();
+            updateLFO2Connections(); // Update LFO2 as well
             if (dom.oscType.value === 'granular' && (!grainPlayerBuffer || !grainPlayerBuffer.loaded)) {
                 dom.midiLearnStatus.textContent = "Preset loaded. Load WAV for Granular Osc.";
             } else {
@@ -855,6 +904,8 @@
             dom.pwmControls.classList.toggle('hidden', dom.oscType.value !== 'pwm'); 
             dom.fmControls.classList.toggle('hidden', dom.oscType.value !== 'fmsine');
             dom.supersawControls.classList.toggle('hidden', dom.oscType.value !== 'supersaw');
+            dom.noiseControls.classList.toggle('hidden', dom.oscType.value !== 'noise');
+            dom.pulseControls.classList.toggle('hidden', dom.oscType.value !== 'pulse');
             dom.resonantBodyControls.classList.toggle('hidden', dom.oscType.value !== 'resonantbody');
             dom.formantVoiceControls.classList.toggle('hidden', dom.oscType.value !== 'formantvoice');
             dom.granularControls.classList.toggle('hidden', dom.oscType.value !== 'granular');
