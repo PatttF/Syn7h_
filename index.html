@@ -383,7 +383,7 @@
         };
 
         // --- Helper Functions ---
-        function showMessage(overlayElem, message, buttonText, callback) { console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
+        function showMessage(overlayElem, message, buttonText, callback) { console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.innerHTML = message.replace(/\n/g, '<br>'); if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
         function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
         
         function releaseAndRefocus(event) {
@@ -995,7 +995,11 @@
             dom.lfo2PulseWidthControls.classList.toggle('hidden', dom.lfo2Wave.value !== 'pulse');
             dom.lfo2PwmFreqControls.classList.toggle('hidden', dom.lfo2Wave.value !== 'pwm');
             
-            showMessage(dom.audioContextMessageOverlay, "Click 'Start' to enable audio.", "Start", async () => {
+            showMessage(dom.audioContextMessageOverlay, `Welcome to Syn7h_! Click "Start" to enable audio.
+<br><br>
+You can play notes with your mouse, a connected MIDI controller, or your computer's keyboard (QWERTY row for black keys, ASDF row for white keys).
+<br><br>
+<strong>Note:</strong> Computer keyboard playback can sometimes be buggy depending on your browser and OS.`, "Start", async () => {
                 const success = await initializeAudio();
                 if (!success) console.error("Initial audio setup FAILED after user interaction on load.");
                 else console.log("Initial audio setup OK after user interaction on load.");
