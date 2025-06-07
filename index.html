@@ -382,8 +382,8 @@
         };
 
         // --- Helper Functions ---
-        function showMessage(overlayElem, message, buttonText, callback) { console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
-        function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
+        function showMessage(overlayElem, message, buttonText, callback) { /* ... (same) ... */ console.log("Showing message:", message); const p = overlayElem.querySelector('p'); const btn = overlayElem.querySelector('button'); if (p) p.textContent = message; if (btn) btn.textContent = buttonText; overlayElem.classList.add('visible'); return new Promise((resolve) => { const clickHandler = async () => { overlayElem.classList.remove('visible'); btn.removeEventListener('click', clickHandler); if (callback) await callback(); resolve(); }; btn.addEventListener('click', clickHandler); }); }
+        function updateSliderDisplay(slider, displayElement, unit = '', decimals = 1) { /* ... (same) ... */ if (!slider || !displayElement) { console.warn("updateSliderDisplay: Missing slider or displayElement for unit:", unit); return; } const value = parseFloat(slider.value).toFixed(decimals); displayElement.textContent = `${value} ${unit}`; }
         
         function releaseAndRefocus(event) {
             releaseAllComputerKeys(); 
@@ -414,6 +414,8 @@
                     lfo1 = new Tone.LFO({ frequency: parseFloat(dom.lfo1Rate.value), type: dom.lfo1Wave.value, min: -1, max: 1 });
                     
                     lfo2ToPulseWidthGain = new Tone.Multiply(0); 
+                    lfo2ToDetuneGain = new Tone.Multiply(0);
+                    lfo2ToFilterFreqGain = new Tone.Multiply(0);
                     lfo2 = new Tone.LFO({ frequency: parseFloat(dom.lfo2Rate.value), type: dom.lfo2Wave.value, min: -1, max: 1 });
 
 
@@ -502,6 +504,8 @@
                 if(lfo1ToDetuneGain && !lfo1ToDetuneGain.disposed) { lfo1ToDetuneGain.dispose(); lfo1ToDetuneGain = new Tone.Multiply(0); }
                 if(lfo1ToFilterFreqGain && !lfo1ToFilterFreqGain.disposed) { lfo1ToFilterFreqGain.dispose(); lfo1ToFilterFreqGain = new Tone.Multiply(0); }
                 if(lfo2ToPulseWidthGain && !lfo2ToPulseWidthGain.disposed) { lfo2ToPulseWidthGain.dispose(); lfo2ToPulseWidthGain = new Tone.Multiply(0); }
+                if(lfo2ToDetuneGain && !lfo2ToDetuneGain.disposed) { lfo2ToDetuneGain.dispose(); lfo2ToDetuneGain = new Tone.Multiply(0); }
+                if(lfo2ToFilterFreqGain && !lfo2ToFilterFreqGain.disposed) { lfo2ToFilterFreqGain.dispose(); lfo2ToFilterFreqGain = new Tone.Multiply(0); }
 
 
                 if (newActiveSynthType === 'GrainPlayer') {
@@ -861,7 +865,9 @@
             "8-Bit Pluck": { ...defaultSettings, oscType: "square", ampEnvAttack: 0.005, ampEnvDecay: 0.1, ampEnvSustain: 0, ampEnvRelease: 0.1, bitCrusherEnable: true, crusherBits: 4, crusherWet: 0.5 },
             "Wobble Bass": { ...defaultSettings, oscType: "sawtooth", filterType: "moog", filterCutoff: 1200, filterResonance: 6, lfo1Enable: true, lfo1Wave: "sine", lfo1Rate: 8, lfo1Depth: 0.8, lfo1Destination: "filterCutoff", ampEnvAttack: 0.01, ampEnvDecay: 0.1, ampEnvSustain: 0.8, ampEnvRelease: 0.2 },
             "Spacey FX": { ...defaultSettings, filterType: "bandpass12", filterCutoff: 5000, filterResonance: 15, ampEnvAttack: 0.1, ampEnvSustain: 1, ampEnvRelease: 2, pingpongEnable: true, pingpongDelayTime: 0.2, pingpongFeedback: 0.7, pingpongWet: 0.8, lfo1Enable: true, lfo1Rate: 0.2, lfo1Depth: 1, lfo1Destination: "filterCutoff" },
-            "Bright Brass": { ...defaultSettings, oscType: "supersaw", supersawCount: 5, supersawSpread: 40, ampEnvAttack: 0.1, ampEnvDecay: 0.5, ampEnvSustain: 0.8, ampEnvRelease: 0.4, chorusEnable: true, chorusWet: 0.3, filterType: "ms20lp", filterCutoff: 4000, filterResonance: 2 }
+            "Bright Brass": { ...defaultSettings, oscType: "supersaw", supersawCount: 5, supersawSpread: 40, ampEnvAttack: 0.1, ampEnvDecay: 0.5, ampEnvSustain: 0.8, ampEnvRelease: 0.4, chorusEnable: true, chorusWet: 0.3, filterType: "ms20lp", filterCutoff: 4000, filterResonance: 2 },
+            "LFO S&H Noise": { ...defaultSettings, oscType: "noise", noiseType: "pink", filterType: "moog", filterCutoff: 2000, filterResonance: 5, filterEnvAmount: 0, ampEnvAttack: 0.01, ampEnvDecay: 0.1, ampEnvSustain: 1, lfo1Enable: true, lfo1Wave: "square", lfo1Rate: 8, lfo1Destination: "filterCutoff" },
+            "Dual LFO Pulse": { ...defaultSettings, oscType: "pulse", pulseWidth: 0.5, ampEnvAttack: 0.2, ampEnvRelease: 0.8, lfo1Enable: true, lfo1Wave: "sine", lfo1Rate: 0.2, lfo1Depth: 0.5, lfo1Destination: "pulseWidth", lfo2Enable: true, lfo2Wave: "sawtooth", lfo2Rate: 3, lfo2Depth: 0.7, lfo2Destination: "filterCutoff", filterType: "moog", filterCutoff: 1500, filterResonance: 4, filterEnvAmount: 2 }
         };
 
         function populatePresetDropdown() {
@@ -1011,6 +1017,8 @@
             dom.granularControls.classList.toggle('hidden', dom.oscType.value !== 'granular');
             dom.lfo1PulseWidthControls.classList.toggle('hidden', dom.lfo1Wave.value !== 'pulse'); 
             dom.lfo1PwmFreqControls.classList.toggle('hidden', dom.lfo1Wave.value !== 'pwm'); 
+            dom.lfo2PulseWidthControls.classList.toggle('hidden', dom.lfo2Wave.value !== 'pulse');
+            dom.lfo2PwmFreqControls.classList.toggle('hidden', dom.lfo2Wave.value !== 'pwm');
             
             showMessage(dom.audioContextMessageOverlay, "Click 'Start' to enable audio.", "Start", async () => {
                 const success = await initializeAudio();
