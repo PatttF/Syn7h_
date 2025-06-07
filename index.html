@@ -116,6 +116,10 @@
                 </div>
                 <button id="midi-learn-button" class="mb-2">MIDI Learn</button>
                 <div id="midi-learn-status" class="text-xs mb-2 h-6"></div> 
+                 <label for="midi-input-select" class="text-sm">MIDI Input</label>
+                <select id="midi-input-select" class="mb-2"></select>
+                 <label for="midi-channel-select" class="text-sm">MIDI Channel</label>
+                <select id="midi-channel-select" class="mb-2"></select>
                 <label for="osc-type">Type</label>
                 <select id="osc-type">
                     <option value="sine">Sine</option><option value="square">Square</option><option value="triangle">Triangle</option><option value="sawtooth">Sawtooth</option>
@@ -292,12 +296,14 @@
             presetSelect: document.getElementById('preset-select'),
             presetNameInput: document.getElementById('preset-name-input'),
             savePresetButton: document.getElementById('save-preset-button'),
-            sequencerEnable: document.getElementById('sequencer-enable'), sequencerRate: document.getElementById('sequencer-rate'), sequencerRateDisplay: document.getElementById('sequencer-rate-display'), sequencerGateProb: document.getElementById('sequencer-gate-prob'), sequencerGateProbDisplay: document.getElementById('sequencer-gate-prob-display'), sequencerNoteDuration: document.getElementById('sequencer-note-duration'), sequencerNoteDurationDisplay: document.getElementById('sequencer-note-duration-display'), sequencerPitchSpread: document.getElementById('sequencer-pitch-spread'), sequencerPitchSpreadDisplay: document.getElementById('sequencer-pitch-spread-display'), sequencerScale: document.getElementById('sequencer-scale')
+            sequencerEnable: document.getElementById('sequencer-enable'), sequencerRate: document.getElementById('sequencer-rate'), sequencerRateDisplay: document.getElementById('sequencer-rate-display'), sequencerGateProb: document.getElementById('sequencer-gate-prob'), sequencerGateProbDisplay: document.getElementById('sequencer-gate-prob-display'), sequencerNoteDuration: document.getElementById('sequencer-note-duration'), sequencerNoteDurationDisplay: document.getElementById('sequencer-note-duration-display'), sequencerPitchSpread: document.getElementById('sequencer-pitch-spread'), sequencerPitchSpreadDisplay: document.getElementById('sequencer-pitch-spread-display'), sequencerScale: document.getElementById('sequencer-scale'),
+            midiInputSelect: document.getElementById('midi-input-select'),
+            midiChannelSelect: document.getElementById('midi-channel-select')
         };
         
         for (const key in dom) { if (dom[key] === null) { console.error(`CRITICAL DOM ERROR: Element for dom.${key} not found!`); }}
 
-        const paramDefinitions = { /* ... (Updated with new oscillators, lfo2, etc.) ... */
+        const paramDefinitions = { 
             'oscType': { elementId: 'osc-type', label: 'Osc Type', type: 'select', options: Array.from(dom.oscType.options).map(opt => opt.value), eventToDispatch: 'change' },
             'pulseWidth': { elementId: 'pulse-width', label: 'Pulse Width', type: 'range', min:0.01, max:0.99, eventToDispatch: 'input'},
             'pwmSpeed': { elementId: 'pwm-speed', label: 'PWM Speed', type: 'range', min: 0.1, max: 20, eventToDispatch: 'input'},
@@ -618,7 +624,7 @@
         }
         function updateLFO1Connections() { /* ... (same - ensure robust checks for synth.get().filterEnvelope) ... */ if (!lfo1 || !synth || synth.disposed || !tremoloEffect || !lfo1ToDetuneGain || !lfo1ToFilterFreqGain ) { console.warn("LFO1_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo1Enable.checked; const rate = parseFloat(dom.lfo1Rate.value); const depth = parseFloat(dom.lfo1Depth.value); const lfoWave = dom.lfo1Wave.value; const destination = dom.lfo1Destination.value; lfo1.frequency.value = rate; lfo1.type = lfoWave; dom.lfo1PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo1PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo1.width.value = parseFloat(dom.lfo1PulseWidth.value); } else if (lfoWave === 'pwm') { lfo1.modulationFrequency.value = parseFloat(dom.lfo1PwmFreq.value); } try { lfo1.disconnect(lfo1ToDetuneGain); if(synth instanceof Tone.PolySynth && synth.detune) lfo1ToDetuneGain.disconnect(synth.detune); } catch (e) {} try { lfo1.disconnect(lfo1ToFilterFreqGain); if (synth instanceof Tone.PolySynth && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) lfo1ToFilterFreqGain.disconnect(synth.filterEnvelope.baseFrequency); } catch (e) {} tremoloEffect.depth.value = 0; tremoloEffect.wet.value = 0; if (isEnabled) { if (lfo1.state !== "started") lfo1.start(); switch (destination) { case 'pitch': if(synth instanceof Tone.PolySynth && synth.detune) {lfo1ToDetuneGain.factor.value = depth * 200; lfo1.connect(lfo1ToDetuneGain); lfo1ToDetuneGain.connect(synth.detune);} else { console.log("LFO to Pitch: Not applicable or detune not a Signal.");} break; case 'filterCutoff': if (synth instanceof Tone.PolySynth && dom.filterType.value !== "none" && synth.get().filterEnvelope && synth.get().filterEnvelope.baseFrequency) { lfo1ToFilterFreqGain.factor.value = depth * 5000; lfo1.connect(lfo1ToFilterFreqGain); lfo1ToFilterFreqGain.connect(synth.filterEnvelope.baseFrequency); } else { console.log("LFO to Filter: Not applicable on current synth.");} break; case 'amplitude': tremoloEffect.frequency.value = rate; let tremoloLfoType = (lfoWave === 'pulse' || lfoWave === 'pwm') ? 'square' : lfoWave; tremoloEffect.type = tremoloLfoType; tremoloEffect.depth.value = depth; tremoloEffect.wet.value = 1; break; default: break;} } else { if (lfo1.state === "started") lfo1.stop(); }}
         function updateLFO2Connections() {
-             if (!lfo2 || !synth || synth.disposed || !tremoloEffect || !lfo2ToPulseWidthGain ) { console.warn("LFO2_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo2Enable.checked; const rate = parseFloat(dom.lfo2Rate.value); const depth = parseFloat(dom.lfo2Depth.value); const lfoWave = dom.lfo2Wave.value; const destination = dom.lfo2Destination.value; lfo2.frequency.value = rate; lfo2.type = lfoWave; dom.lfo2PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo2PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo2.width.value = parseFloat(dom.lfo2PulseWidth.value); } else if (lfoWave === 'pwm') { lfo2.modulationFrequency.value = parseFloat(dom.lfo2PwmFreq.value); } 
+             if (!lfo2 || !synth || synth.disposed || !lfo2ToPulseWidthGain ) { console.warn("LFO2_CONN_WARN: Node(s) not ready."); return; } const isEnabled = dom.lfo2Enable.checked; const rate = parseFloat(dom.lfo2Rate.value); const depth = parseFloat(dom.lfo2Depth.value); const lfoWave = dom.lfo2Wave.value; const destination = dom.lfo2Destination.value; lfo2.frequency.value = rate; lfo2.type = lfoWave; dom.lfo2PulseWidthControls.classList.toggle('hidden', lfoWave !== 'pulse'); dom.lfo2PwmFreqControls.classList.toggle('hidden', lfoWave !== 'pwm'); if (lfoWave === 'pulse') { lfo2.width.value = parseFloat(dom.lfo2PulseWidth.value); } else if (lfoWave === 'pwm') { lfo2.modulationFrequency.value = parseFloat(dom.lfo2PwmFreq.value); } 
              // Disconnect all previous connections
              try { if(lfo2.state === "started") lfo2.disconnect(); } catch(e){}
 
@@ -642,11 +648,84 @@
         window.addEventListener('keyup', (event) => { if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'SELECT') return; if (!synth) return; const key = event.key.toLowerCase(); if (computerKeyNoteMapping[key] && pressedComputerKeys.has(key)) { event.preventDefault(); const noteBase = computerKeyNoteMapping[key]; const fullNoteName = `${noteBase}${startingOctave}`; releaseNote(fullNoteName); pressedComputerKeys.delete(key); } });
         window.addEventListener('blur', releaseAllComputerKeys);
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { releaseAllComputerKeys(); } });
-        async function initializeMIDI() { /* ... (same - includes updated error messages) ... */ dom.midiStatus.textContent = "Accessing MIDI..."; if (navigator.requestMIDIAccess) { try { midiAccess = await navigator.requestMIDIAccess({ sysex: false }); dom.midiStatus.textContent = "MIDI Granted. Listening..."; startMIDIListening(); } catch (e) { let specificAdvice = ""; if (e.message && e.message.toLowerCase().includes("permission add-on")) { specificAdvice = " This error often appears in Firefox if MIDI permissions are not set or an add-on like Jazz-MIDI is needed and not configured. Please check your browser's site permissions for MIDI and ensure any required MIDI extensions are active."; } else if (e.name === "SecurityError") { specificAdvice = " MIDI access was denied by a security policy. This can happen if the page is not served over HTTPS, or if MIDI is disabled in browser settings/permissions."; } else { specificAdvice = " Please ensure your MIDI device is connected and check your browser's MIDI settings and site permissions."; } dom.midiStatus.textContent = `MIDI Access Error.${specificAdvice}`; console.error("Could not access MIDI devices:", e.name, e.message, specificAdvice); } } else { dom.midiStatus.textContent = "Web MIDI API not supported in this browser. Use Chrome/Edge for MIDI."; console.warn("Web MIDI API not supported in this browser!"); } }
-        function startMIDIListening() { /* ... (same) ... */ if (!midiAccess) return; const inputs = midiAccess.inputs.values(); let deviceFound = false; for (let input = inputs.next(); input && !input.done; input = inputs.next()) { deviceFound = true; input.value.onmidimessage = onMIDIMessage; } if(deviceFound) dom.midiStatus.textContent = "Listening to MIDI devices."; else dom.midiStatus.textContent = "No MIDI inputs found."; midiAccess.onstatechange = (event) => { dom.midiStatus.textContent = `MIDI: ${event.port.name} ${event.port.state}. Re-scan...`; startMIDIListening(); }; }
-        function midiNoteToNoteNameAndOctave(midiNote) { /* ... (same) ... */ const noteIndex = midiNote % 12; const octave = Math.floor(midiNote / 12) - 1; return `${noteNamesSharp[noteIndex]}${octave}`; }
+        async function initializeMIDI() {
+            dom.midiStatus.textContent = "Accessing MIDI...";
+            if (navigator.requestMIDIAccess) {
+                try {
+                    midiAccess = await navigator.requestMIDIAccess({ sysex: false });
+                    dom.midiStatus.textContent = "MIDI Granted. Listening...";
+                    populateMidiDevices();
+                    startMIDIListening();
+                    midiAccess.onstatechange = (event) => {
+                        dom.midiStatus.textContent = `MIDI: ${event.port.name} ${event.port.state}. Re-scan...`;
+                        populateMidiDevices();
+                        startMIDIListening();
+                    };
+                } catch (e) {
+                    let specificAdvice = ""; 
+                    if (e.message && e.message.toLowerCase().includes("permission add-on")) { specificAdvice = " This error often appears in Firefox if MIDI permissions are not set or an add-on like Jazz-MIDI is needed and not configured. Please check your browser's site permissions for MIDI and ensure any required MIDI extensions are active."; } else if (e.name === "SecurityError") { specificAdvice = " MIDI access was denied by a security policy. This can happen if the page is not served over HTTPS, or if MIDI is disabled in browser settings/permissions."; } else { specificAdvice = " Please ensure your MIDI device is connected and check your browser's MIDI settings and site permissions."; } 
+                    dom.midiStatus.textContent = `MIDI Access Error.${specificAdvice}`; 
+                    console.error("Could not access MIDI devices:", e.name, e.message, specificAdvice); 
+                }
+            } else {
+                dom.midiStatus.textContent = "Web MIDI API not supported in this browser. Use Chrome/Edge for MIDI.";
+                console.warn("Web MIDI API not supported in this browser!");
+            }
+        }
+        function populateMidiDevices() {
+            if (!midiAccess) return;
+            dom.midiInputSelect.innerHTML = ''; // Clear previous options
+            if (midiAccess.inputs.size === 0) {
+                const noDeviceOption = new Option("No MIDI devices found", "none");
+                dom.midiInputSelect.add(noDeviceOption);
+            } else {
+                const allOption = new Option("Listen to All Devices", "all");
+                dom.midiInputSelect.add(allOption);
+                midiAccess.inputs.forEach(input => {
+                    const option = new Option(input.name, input.id);
+                    dom.midiInputSelect.add(option);
+                });
+            }
+             // Populate MIDI channels
+             dom.midiChannelSelect.innerHTML = '';
+             const allChannelsOption = new Option("All Channels", "all");
+             dom.midiChannelSelect.add(allChannelsOption);
+             for(let i = 1; i <= 16; i++) {
+                 const channelOption = new Option(`Channel ${i}`, i);
+                 dom.midiChannelSelect.add(channelOption);
+             }
+
+        }
+        function startMIDIListening() { 
+            if (!midiAccess) return;
+            // First, remove listeners from all inputs to prevent duplicates
+             midiAccess.inputs.forEach(input => { input.onmidimessage = null; });
+            const selectedDeviceId = dom.midiInputSelect.value;
+            if (selectedDeviceId === "all") {
+                midiAccess.inputs.forEach(input => {
+                    input.onmidimessage = onMIDIMessage;
+                });
+                dom.midiStatus.textContent = "Listening to all MIDI devices.";
+            } else if (selectedDeviceId !== "none") {
+                const selectedInput = midiAccess.inputs.get(selectedDeviceId);
+                if (selectedInput) {
+                    selectedInput.onmidimessage = onMIDIMessage;
+                    dom.midiStatus.textContent = `Listening to: ${selectedInput.name}`;
+                }
+            }
+        }
+        function midiNoteToNoteNameAndOctave(midiNote) { const noteIndex = midiNote % 12; const octave = Math.floor(midiNote / 12) - 1; return `${noteNamesSharp[noteIndex]}${octave}`; }
         
-        function onMIDIMessage(message) { /* ... (MIDI Learn logic and note on/off unchanged) ... */ if (!synth) return; const [command, data1, data2] = message.data; const type = command & 0xF0; const channel = command & 0x0F; if (isGlobalMidiLearnActive && paramKeyToLearn && type === 0xB0) { const ccNumber = data1; const currentParamDef = paramDefinitions[paramKeyToLearn]; midiMappings[ccNumber] = paramKeyToLearn; saveMidiMappings(); console.log(`MIDI LEARN: Mapped CC ${ccNumber} to ${currentParamDef.label}`); dom.midiLearnStatus.textContent = `Learned: CC ${ccNumber} -> ${currentParamDef.label}`; isGlobalMidiLearnActive = false; paramKeyToLearn = null; dom.midiLearnButton.textContent = "MIDI Learn"; dom.midiLearnButton.classList.remove('learn-active'); setTimeout(() => { dom.midiLearnStatus.textContent = ""; }, 2000); } else if (!isGlobalMidiLearnActive && type === 0xB0) { const ccNumber = data1; const ccValue = data2; const mappedParamKey = midiMappings[ccNumber]; if (mappedParamKey) { updateParamFromMidiCC(mappedParamKey, ccValue); } } else if ((type === 0x90 && data2 > 0)) { const noteNameFull = midiNoteToNoteNameAndOctave(data1); const scaledVelocity = data2 / 127; playNote(noteNameFull, scaledVelocity); } else if (type === 0x80 || (type === 0x90 && data2 === 0)) { const noteNameFull = midiNoteToNoteNameAndOctave(data1); releaseNote(noteNameFull); } }
+        function onMIDIMessage(message) { 
+            const [command, data1, data2] = message.data;
+            const selectedChannel = dom.midiChannelSelect.value;
+            const messageChannel = (command & 0x0f) + 1; // MIDI channels are 1-16, not 0-15
+            if (selectedChannel !== "all" && messageChannel != selectedChannel) {
+                return; // Ignore message if not on the selected channel
+            }
+            if (!synth) return;
+            const type = command & 0xF0;
+             if (isGlobalMidiLearnActive && paramKeyToLearn && type === 0xB0) { const ccNumber = data1; const currentParamDef = paramDefinitions[paramKeyToLearn]; midiMappings[ccNumber] = paramKeyToLearn; saveMidiMappings(); console.log(`MIDI LEARN: Mapped CC ${ccNumber} to ${currentParamDef.label}`); dom.midiLearnStatus.textContent = `Learned: CC ${ccNumber} -> ${currentParamDef.label}`; isGlobalMidiLearnActive = false; paramKeyToLearn = null; dom.midiLearnButton.textContent = "MIDI Learn"; dom.midiLearnButton.classList.remove('learn-active'); setTimeout(() => { dom.midiLearnStatus.textContent = ""; }, 2000); } else if (!isGlobalMidiLearnActive && type === 0xB0) { const ccNumber = data1; const ccValue = data2; const mappedParamKey = midiMappings[ccNumber]; if (mappedParamKey) { updateParamFromMidiCC(mappedParamKey, ccValue); } } else if ((type === 0x90 && data2 > 0)) { const noteNameFull = midiNoteToNoteNameAndOctave(data1); const scaledVelocity = data2 / 127; playNote(noteNameFull, scaledVelocity); } else if (type === 0x80 || (type === 0x90 && data2 === 0)) { const noteNameFull = midiNoteToNoteNameAndOctave(data1); releaseNote(noteNameFull); } }
         function updateParamFromMidiCC(paramKey, ccValue) { /* ... (same) ... */ const paramDef = paramDefinitions[paramKey]; if (!paramDef) { console.warn(`MIDI CC: No param def for key ${paramKey}`); return; } const element = dom[paramDef.elementId]; if (!element) { console.warn(`MIDI CC: Element ID ${paramDef.elementId} not found for ${paramKey}`); return; } let normalizedValue; if (paramDef.type === 'range') { const min = paramDef.min; const max = paramDef.max; normalizedValue = (ccValue / 127) * (max - min) + min; element.value = normalizedValue; } else if (paramDef.type === 'checkbox') { normalizedValue = ccValue >= 64; element.checked = normalizedValue; } else if (paramDef.type === 'select') { const optionCount = paramDef.options.length; const optionIndex = Math.floor((ccValue / 127) * (optionCount -1)); normalizedValue = paramDef.options[Math.max(0, Math.min(optionIndex, optionCount - 1))]; element.value = normalizedValue; } element.dispatchEvent(new Event(paramDef.eventToDispatch, { bubbles: true }));}
         function toggleGlobalMidiLearnMode() { /* ... (same) ... */ isGlobalMidiLearnActive = !isGlobalMidiLearnActive; if (isGlobalMidiLearnActive) { dom.midiLearnButton.textContent = "Learning... Click a Control"; dom.midiLearnButton.classList.add('learn-active'); dom.midiLearnStatus.textContent = "Click a synth control to map it."; paramKeyToLearn = null; } else { dom.midiLearnButton.textContent = "MIDI Learn"; dom.midiLearnButton.classList.remove('learn-active'); dom.midiLearnStatus.textContent = paramKeyToLearn ? `Cancelled learn for ${paramDefinitions[paramKeyToLearn]?.label || 'Unknown'}` : ""; paramKeyToLearn = null; setTimeout(() => { if(!isGlobalMidiLearnActive) dom.midiLearnStatus.textContent = ""; }, 2000); } }
         function setupMidiLearnForElement(paramKey) { /* ... (same) ... */ releaseAllComputerKeys(); if (!isGlobalMidiLearnActive) return; paramKeyToLearn = paramKey; const paramDef = paramDefinitions[paramKey]; dom.midiLearnButton.textContent = `Listening for CC... (${paramDef.label})`; dom.midiLearnStatus.textContent = `Move MIDI control for: ${paramDef.label}`; console.log(`MIDI LEARN: Waiting for CC for parameter: ${paramKey} (Key: ${paramKey})`); }
@@ -656,6 +735,9 @@
         // --- UI Control Event Listeners ---
         dom.startAudioButton.addEventListener('click', async (e) => { releaseAndRefocus(e); dom.audioContextMessageOverlay.classList.remove('visible'); const success = await initializeAudio(); if(success) console.log("Audio init OK from Start."); else console.error("Audio init FAILED from Start."); });
         dom.midiLearnButton.addEventListener('click', (e) => { toggleGlobalMidiLearnMode(); releaseAndRefocus(e); });
+        dom.midiInputSelect.addEventListener('change', startMIDIListening);
+        dom.midiChannelSelect.addEventListener('change', releaseAndRefocus);
+        
         Object.keys(paramDefinitions).forEach(paramKey => { const definition = paramDefinitions[paramKey]; const element = dom[definition.elementId]; if (element) { const eventTypeForLearn = (definition.type === 'range' || definition.type === 'file') ? 'mousedown' : 'focus'; element.addEventListener(eventTypeForLearn, (e) => { if (isGlobalMidiLearnActive && !paramKeyToLearn) { setupMidiLearnForElement(paramKey); } }); element.addEventListener('change', releaseAndRefocus); if (definition.type === 'range') { element.addEventListener('mouseup', releaseAndRefocus); element.addEventListener('touchend', releaseAndRefocus, {passive: true});}} else { console.warn(`MIDI Learn Setup: Element ID '${definition.elementId}' for param '${paramKey}' not found.`); }});
 
         dom.oscType.addEventListener('change', (e) => { updateOscillatorType(); releaseAndRefocus(e); });
@@ -749,7 +831,7 @@
         dom.sequencerPitchSpread.addEventListener('input', (e) => { updateSliderDisplay(dom.sequencerPitchSpread, dom.sequencerPitchSpreadDisplay, ' semi', 0);  });
         dom.sequencerScale.addEventListener('change', releaseAndRefocus);
 
-        // Preset System
+        // --- Preset System ---
         const defaultSettings = { /* ... (all paramDefinitions keys with their default values) ... */
             oscType: "sine", pulseWidth: 0.5, pwmSpeed: 5, fmHarmonicity: 1.5, fmModIndex: 10, supersawCount: 3, supersawSpread: 25, noiseType: "white", resonantBodyHarmonicity: 2.7, resonantBodyModIndex: 20, formantVoiceHarmonicity: 1.2, formantVoiceModIndex: 5,
             granularLoop: false, granularLoopStart: 0, granularLoopEnd: 1, granularReverse: false, granularGrainSize: 0.1, granularOverlap: 0.05, granularDetune: 0, granularPlaybackRate: 1,
@@ -849,7 +931,7 @@
             applyCurrentOscillatorSpecificSettings(dom.oscType.value);
             applyAudioChain();
             updateLFO1Connections();
-            updateLFO2Connections(); // Update LFO2 as well
+            updateLFO2Connections(); 
             if (dom.oscType.value === 'granular' && (!grainPlayerBuffer || !grainPlayerBuffer.loaded)) {
                 dom.midiLearnStatus.textContent = "Preset loaded. Load WAV for Granular Osc.";
             } else {
