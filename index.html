@@ -253,7 +253,7 @@
         let synth; 
         let startingOctave = 3; 
         let lfo1, lfo2;
-        let tremoloEffect, distortionEffect, bitCrusherEffect, ringModulatorEffect, ringModCarrier, ringModWet, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect;
+        let tremoloEffect, distortionEffect, bitCrusherEffect, ringModulator, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect;
         let masterVCA; // Master VCA
         let currentActiveSynthType = 'MonoSynth'; 
         let grainPlayerBuffer = null;
@@ -430,9 +430,8 @@
                     tremoloEffect = new Tone.Tremolo({ frequency: parseFloat(dom.lfo1Rate.value), type: dom.lfo1Wave.value, depth: 0, spread: 0 });
                     distortionEffect = new Tone.Distortion(parseFloat(dom.distAmount.value));
                     bitCrusherEffect = new Tone.BitCrusher(parseInt(dom.crusherBits.value));
-                    ringModCarrier = new Tone.Oscillator({type: 'sine', frequency: 100}).start();
-                    ringModEffect = new Tone.Multiply();
-                    ringModWet = new Tone.CrossFade(0);
+                    ringModulator = new Tone.RingModulator({frequency: 100, harmonicity: 3});
+                    chorusEffect = new Tone.Chorus({ frequency: parseFloat(dom.chorusRate.value), depth: parseFloat(dom.chorusDepth.value), feedback: parseFloat(dom.chorusFeedback.value), delayTime: 3.5, type: "sine" });
                     phaserEffect = new Tone.Phaser({ frequency: parseFloat(dom.phaserFrequency.value), octaves: parseFloat(dom.phaserOctaves.value), baseFrequency: parseFloat(dom.phaserBaseFreq.value) });
                     delayEffect = new Tone.FeedbackDelay({ delayTime: parseFloat(dom.delayTime.value), feedback: parseFloat(dom.delayFeedback.value) });
                     pingPongDelayEffect = new Tone.PingPongDelay({ delayTime: parseFloat(dom.pingpongDelayTime.value), feedback: parseFloat(dom.pingpongFeedback.value) });
@@ -443,7 +442,7 @@
 
                     distortionEffect.wet.value = dom.distEnable.checked ? parseFloat(dom.distWet.value) : 0; 
                     bitCrusherEffect.wet.value = dom.crusherEnable.checked ? parseFloat(dom.crusherWet.value) : 0; 
-                    ringModWet.fade.value = dom.ringModEnable.checked ? parseFloat(dom.ringModWet.value) : 0;
+                    ringModulator.wet.value = dom.ringModEnable.checked ? parseFloat(dom.ringModWet.value) : 0;
                     chorusEffect.wet.value = dom.chorusEnable.checked ? parseFloat(dom.chorusWet.value) : 0; 
                     phaserEffect.wet.value = dom.phaserEnable.checked ? parseFloat(dom.phaserWet.value) : 0; 
                     delayEffect.wet.value = dom.delayEnable.checked ? parseFloat(dom.delayWet.value) : 0; 
@@ -466,6 +465,7 @@
             } else { console.warn("AUDIO_INIT: TEST SOUND NOT TRIGGERED (or Granular mode active or synth not ready)."); }
             
             await initializeMIDI();
+            initializeSequencer();
             
             console.log("AUDIO_INIT: Initialization finished.");
             return true;
@@ -607,26 +607,15 @@
         }
         
         function applyAudioChain() { 
-            const allEffectNodes = [tremoloEffect, ringModWet, distortionEffect, bitCrusherEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect];
+            const allEffectNodes = [tremoloEffect, ringModulator, distortionEffect, bitCrusherEffect, chorusEffect, phaserEffect, delayEffect, pingPongDelayEffect, reverbEffect];
             allEffectNodes.forEach(node => { if(node && !node.disposed) try { node.disconnect(); } catch(e){} }); 
             if (!synth || synth.disposed) { console.warn("APPLY_CHAIN_WARN: Synth object is null or disposed, cannot build audio chain."); return; } 
 
             console.log("APPLY_CHAIN: Rebuilding audio chain..."); 
             
             let currentNode = synth; 
-            
-            if(dom.ringModEnable.checked){
-                ringModWet.fade.value = parseFloat(dom.ringModWet.value);
-                ringModCarrier.type = dom.ringModCarrierWave.value;
-                ringModCarrier.frequency.value = parseFloat(dom.ringModFrequency.value);
-                currentNode.connect(ringModWet.a);
-                currentNode.connect(ringModEffect);
-                ringModCarrier.connect(ringModEffect, 0, 1);
-                ringModEffect.connect(ringModWet.b);
-                currentNode = ringModWet;
-            } else {
-                 ringModWet.fade.value = 0;
-            }
+
+            currentNode.connect(ringModulator); currentNode = ringModulator;
             currentNode.connect(tremoloEffect); currentNode = tremoloEffect; 
             if (dom.distEnable.checked && parseFloat(dom.distWet.value) > 0) { distortionEffect.wet.value = parseFloat(dom.distWet.value); currentNode.connect(distortionEffect); currentNode = distortionEffect; } else { distortionEffect.wet.value = 0; } 
             if (dom.crusherEnable.checked && parseFloat(dom.crusherWet.value) > 0) { bitCrusherEffect.wet.value = parseFloat(dom.crusherWet.value); currentNode.connect(bitCrusherEffect); currentNode = bitCrusherEffect; } else { bitCrusherEffect.wet.value = 0; }  
@@ -802,9 +791,9 @@
         dom.distEnable.addEventListener('change', effectToggleHandler); dom.distAmount.addEventListener('input', (e) => effectParamHandler(dom.distAmount, dom.distAmountDisplay, '', 2, distortionEffect, 'distortion', e)); dom.distWet.addEventListener('input', (e) => effectWetHandler(dom.distWet, dom.distWetDisplay, '', 2, e));
         dom.crusherEnable.addEventListener('change', effectToggleHandler); dom.crusherBits.addEventListener('input', (e) => { updateSliderDisplay(dom.crusherBits, dom.crusherBitsDisplay, ' bits', 0); if(bitCrusherEffect) bitCrusherEffect.bits.value = parseInt(dom.crusherBits.value); /* No blur */ }); dom.crusherWet.addEventListener('input', (e) => effectWetHandler(dom.crusherWet, dom.crusherWetDisplay, '', 2, e));
         dom.ringModEnable.addEventListener('change', (e) => {applyAudioChain(); releaseAndRefocus(e);});
-        dom.ringModCarrierWave.addEventListener('change', (e) => {if(ringModCarrier) ringModCarrier.type = e.target.value; releaseAndRefocus(e);});
-        dom.ringModFrequency.addEventListener('input', (e) => {updateSliderDisplay(dom.ringModFrequency, dom.ringModFrequencyDisplay, ' Hz', 0); if(ringModCarrier) ringModCarrier.frequency.value = parseFloat(e.target.value);});
-        dom.ringModWet.addEventListener('input', (e) => {updateSliderDisplay(dom.ringModWet, dom.ringModWetDisplay, '', 2); if(ringModWet) ringModWet.fade.value = parseFloat(e.target.value);});
+        dom.ringModCarrierWave.addEventListener('change', (e) => {if(ringModulator) ringModulator.carrier.type = e.target.value; releaseAndRefocus(e);});
+        dom.ringModFrequency.addEventListener('input', (e) => {updateSliderDisplay(dom.ringModFrequency, dom.ringModFrequencyDisplay, ' Hz', 0); if(ringModulator) ringModulator.frequency.value = parseFloat(e.target.value);});
+        dom.ringModWet.addEventListener('input', (e) => {updateSliderDisplay(dom.ringModWet, dom.ringModWetDisplay, '', 2); if(ringModulator) ringModulator.wet.value = parseFloat(e.target.value);});
         dom.chorusEnable.addEventListener('change', effectToggleHandler); dom.chorusRate.addEventListener('input', (e) => effectParamHandler(dom.chorusRate, dom.chorusRateDisplay, 'Hz', 1, chorusEffect.frequency, 'value', e)); dom.chorusDepth.addEventListener('input', (e) => effectParamHandler(dom.chorusDepth, dom.chorusDepthDisplay, '', 2, chorusEffect, 'depth', e)); dom.chorusFeedback.addEventListener('input', (e) => effectParamHandler(dom.chorusFeedback, dom.chorusFeedbackDisplay, '', 2, chorusEffect.feedback, 'value', e)); dom.chorusWet.addEventListener('input', (e) => effectWetHandler(dom.chorusWet, dom.chorusWetDisplay, '', 2, e));
         dom.phaserEnable.addEventListener('change', effectToggleHandler); dom.phaserFrequency.addEventListener('input', (e) => effectParamHandler(dom.phaserFrequency, dom.phaserFrequencyDisplay, 'Hz', 1, phaserEffect.frequency, 'value', e)); dom.phaserOctaves.addEventListener('input', (e) => effectParamHandler(dom.phaserOctaves, dom.phaserOctavesDisplay, '', 1, phaserEffect, 'octaves', e)); dom.phaserBaseFreq.addEventListener('input', (e) => effectParamHandler(dom.phaserBaseFreq, dom.phaserBaseFreqDisplay, 'Hz', 0, phaserEffect, 'baseFrequency', e)); dom.phaserWet.addEventListener('input', (e) => effectWetHandler(dom.phaserWet, dom.phaserWetDisplay, '', 2, e));
         dom.delayEnable.addEventListener('change', effectToggleHandler); dom.delayTime.addEventListener('input', (e) => effectParamHandler(dom.delayTime, dom.delayTimeDisplay, 's', 2, delayEffect.delayTime, 'value', e)); dom.delayFeedback.addEventListener('input', (e) => effectParamHandler(dom.delayFeedback, dom.delayFeedbackDisplay, '', 2, delayEffect.feedback, 'value', e)); dom.delayWet.addEventListener('input', (e) => effectWetHandler(dom.delayWet, dom.delayWetDisplay, '', 2, e));
@@ -906,16 +895,7 @@
             "Spacey FX": { ...defaultSettings, filterType: "bandpass12", filterCutoff: 5000, filterResonance: 15, ampEnvAttack: 0.1, ampEnvSustain: 1, ampEnvRelease: 2, pingpongEnable: true, pingpongDelayTime: 0.2, pingpongFeedback: 0.7, pingpongWet: 0.8, lfo1Enable: true, lfo1Rate: 0.2, lfo1Depth: 1, lfo1Destination: "filterCutoff" },
             "Bright Brass": { ...defaultSettings, oscType: "supersaw", supersawCount: 5, supersawSpread: 40, ampEnvAttack: 0.1, ampEnvDecay: 0.5, ampEnvSustain: 0.8, ampEnvRelease: 0.4, chorusEnable: true, chorusWet: 0.3, filterType: "ms20lp", filterCutoff: 4000, filterResonance: 2 },
             "LFO S&H Noise": { ...defaultSettings, oscType: "noise", noiseType: "pink", filterType: "moog", filterCutoff: 2000, filterResonance: 5, filterEnvAmount: 0, ampEnvAttack: 0.01, ampEnvDecay: 0.1, ampEnvSustain: 1, lfo1Enable: true, lfo1Wave: "square", lfo1Rate: 8, lfo1Destination: "filterCutoff" },
-            "Dual LFO Pulse": { ...defaultSettings, oscType: "pulse", pulseWidth: 0.5, ampEnvAttack: 0.2, ampEnvRelease: 0.8, lfo1Enable: true, lfo1Wave: "sine", lfo1Rate: 0.2, lfo1Depth: 0.5, lfo1Destination: "pulseWidth", lfo2Enable: true, lfo2Wave: "sawtooth", lfo2Rate: 3, lfo2Depth: 0.7, lfo2Destination: "filterCutoff", filterType: "moog", filterCutoff: 1500, filterResonance: 4, filterEnvAmount: 2 },
-            "Dirty Organ": { ...defaultSettings, oscType: "square", ampEnvAttack: 0.01, ampEnvRelease: 0.2, distortionEnable: true, distAmount: 0.4, distWet: 0.5, chorusEnable: true, chorusWet: 0.2 },
-            "Plonk Bass": { ...defaultSettings, oscType: "sine", ampEnvAttack: 0.005, ampEnvDecay: 0.15, ampEnvSustain: 0.1, ampEnvRelease: 0.1, filterType: "moog", filterCutoff: 400, filterResonance: 5, filterEnvAmount: 4, filterEnvDecay: 0.1 },
-            "Sci-Fi Drone": { ...defaultSettings, oscType: "sawtooth", ampEnvAttack: 3, ampEnvSustain: 1, ampEnvRelease: 5, lfo1Enable: true, lfo1Wave: "sine", lfo1Rate: 0.1, lfo1Depth: 1, lfo1Destination: "pitch", lfo2Enable: true, lfo2Wave: "sine", lfo2Rate: 0.3, lfo2Depth: 0.8, lfo2Destination: "filterCutoff", filterType: "bandpass12", filterCutoff: 1500, filterResonance: 8 },
-            "Lofi Wobble": { ...defaultSettings, oscType: "pwm", pwmSpeed: 4, ampEnvAttack: 0.01, ampEnvSustain: 0.8, bitCrusherEnable: true, crusherBits: 6, crusherWet: 0.4, lfo1Enable: true, lfo1Wave: "sine", lfo1Rate: 2, lfo1Depth: 0.6, lfo1Destination: "filterCutoff" },
-            "Detuned Lead": { ...defaultSettings, oscType: "supersaw", supersawCount: 2, supersawSpread: 15, ampEnvAttack: 0.02, ampEnvSustain: 0.8, ampEnvRelease: 0.4, chorusEnable: true, chorusDepth: 0.2, chorusWet: 0.3 },
-            "Cyber Rain": { ...defaultSettings, oscType: "noise", noiseType: "white", ampEnvAttack: 0.01, ampEnvDecay: 0.5, ampEnvSustain: 0, ampEnvRelease: 0.5, filterType: "bandpass12", filterCutoff: 5000, filterResonance: 12, filterEnvAmount: 6, filterEnvDecay: 0.8},
-            "Reese Bass": { ...defaultSettings, oscType: "supersaw", supersawCount: 2, supersawSpread: 50, ampEnvAttack: 0.1, ampEnvSustain: 0.9, ampEnvRelease: 0.8, filterType: "moog", filterCutoff: 600, filterResonance: 2},
-            "Glitch Arp": { ...defaultSettings, sequencerEnable: true, sequencerRate: 12, sequencerGateProb: 80, sequencerNoteDuration: 0.05, sequencerPitchSpread: 12, ampEnvAttack: 0.005, ampEnvDecay: 0.08, ampEnvSustain: 0, ampEnvRelease: 0.08, bitCrusherEnable: true, crusherBits: 5, crusherWet: 0.3 },
-            "Laser Pistol": { ...defaultSettings, oscType: "sine", ampEnvAttack: 0.001, ampEnvDecay: 0.1, ampEnvSustain: 0, ampEnvRelease: 0.1, filterEnvAttack: 0.001, filterEnvDecay: 0.05, filterEnvSustain: 0, filterEnvRelease: 0.05, filterEnvAmount: 7, filterCutoff: 100}
+            "Dual LFO Pulse": { ...defaultSettings, oscType: "pulse", pulseWidth: 0.5, ampEnvAttack: 0.2, ampEnvRelease: 0.8, lfo1Enable: true, lfo1Wave: "sine", lfo1Rate: 0.2, lfo1Depth: 0.5, lfo1Destination: "pulseWidth", lfo2Enable: true, lfo2Wave: "sawtooth", lfo2Rate: 3, lfo2Depth: 0.7, lfo2Destination: "filterCutoff", filterType: "moog", filterCutoff: 1500, filterResonance: 4, filterEnvAmount: 2 }
         };
 
         function populatePresetDropdown() {
